@@ -2,6 +2,8 @@
 pragma solidity ^0.8.28;
 
 contract CertificateRegistry {
+    address public owner;
+
     // maps certificate hash -> recipient wallet address
     mapping(bytes32 => address) public recipients;
 
@@ -23,6 +25,7 @@ contract CertificateRegistry {
     );
 
     constructor() {
+        owner = msg.sender;
         // add the contract owner to list of valid issuers
         validIssuers.push(msg.sender);
     }
@@ -38,6 +41,15 @@ contract CertificateRegistry {
         }
         require(isApproved, "Not a valid issuer!");
         _;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "You are not the owner!");
+        _;
+    }
+
+    function approveIssuer(address issuer) public onlyOwner {
+        validIssuers.push(issuer);
     }
 
     // function to issue a certHash to a recipient
