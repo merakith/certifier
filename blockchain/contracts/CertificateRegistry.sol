@@ -2,66 +2,62 @@
 pragma solidity ^0.8.28;
 
 contract CertificateRegistry {
-    address public owner;
-
-    // maps certificate hash -> recipient wallet address
+    address public immutable owner;
     mapping(bytes32 => address) public recipients;
-
-    // list of all approved issuers
+    mapping(address => bool) private _validIssuers;
     address[] public validIssuers;
 
-    // certificate type
     struct Certificate {
         bytes32 hash;
         address issuer;
         bool isValid;
     }
 
-    // events
     event CertificateIssued(
         address indexed issuer,
-        bytes32 certifcateHash,
+        bytes32 certificateHash,
         address indexed recipient
     );
+    event IssuerApproved(address indexed issuer);
+    event IssuerRevoked(address indexed issuer);
 
     constructor() {
         owner = msg.sender;
-        // add the contract owner to list of valid issuers
-        validIssuers.push(msg.sender);
+        approveIssuer(msg.sender);
     }
 
     modifier validIssuer() {
-        address issuer = msg.sender;
-        bool isApproved = false;
-        for (uint256 i = 0; i < validIssuers.length; i++) {
-            if (validIssuers[i] == issuer) {
-                isApproved = true;
-                break;
-            }
-        }
-        require(isApproved, "Not a valid issuer!");
+        require(_validIssuers[msg.sender], "Not a valid issuer!");
         _;
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "You are not the owner!");
+        require(msg.sender == owner, "Not the owner!");
         _;
     }
 
     function approveIssuer(address issuer) public onlyOwner {
+        require(issuer != address(0), "Zero address!");
+        require(!_validIssuers[issuer], "Already approved!");
+        _validIssuers[issuer] = true;
         validIssuers.push(issuer);
+        emit IssuerApproved(issuer);
     }
 
-    // function to issue a certHash to a recipient
-    function issueCertificate(bytes32 certHash, address to) public validIssuer {
-        recipients[certHash] = to;
+    function revokeIssuer(address issuer) public onlyOwner {
+        require(_validIssuers[issuer], "Not approved!");
+        _validIssuers[issuer] = false;
+        emit IssuerRevoked(issuer);
+    }
 
+    function issueCertificate(bytes32 certHash, address to) public validIssuer {
+        require(to != address(0), "Zero address!");
+        recipients[certHash] = to;
         emit CertificateIssued(msg.sender, certHash, to);
     }
 
     // function to check validity of certhash
     function verifyCertificate(bytes32 certHash, address to) public view returns (bool verified){
-        if (recipients[certHash] != to) return false;
-        return true;
+        return recipients[certHash] == to;
     }
 }
