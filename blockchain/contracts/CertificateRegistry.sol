@@ -58,4 +58,10 @@ contract CertificateRegistry {
 
         emit CertificateIssued(msg.sender, certHash, to);
     }
+
+    // function to check validity of certhash
+    function verifyCertificate(bytes32 certHash, address to) public view returns (bool verified){
+        if (recipients[certHash] != to) return false;
+        return true;
+    }
 }
