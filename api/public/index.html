@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Certifier API Test Utility</title>
+		<style>
+			:root {
+				--bg: #f7f5f0;
+				--panel: #ffffff;
+				--ink: #1e1f24;
+				--muted: #60636d;
+				--accent: #005f73;
+				--accent-2: #0a9396;
+				--danger: #9b2226;
+				--ok: #2f7d32;
+				--border: #d9d6cd;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			body {
+				margin: 0;
+				font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+				background: radial-gradient(circle at top right, #e9f5f6 0%, var(--bg) 45%);
+				color: var(--ink);
+			}
+
+			main {
+				max-width: 980px;
+				margin: 0 auto;
+				padding: 24px 16px 56px;
+			}
+
+			h1 {
+				margin: 0 0 6px;
+				font-size: 1.9rem;
+			}
+
+			p.lead {
+				margin: 0 0 24px;
+				color: var(--muted);
+			}
+
+			.grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+				gap: 16px;
+			}
+
+			.card {
+				background: var(--panel);
+				border: 1px solid var(--border);
+				border-radius: 14px;
+				padding: 16px;
+				box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+			}
+
+			h2 {
+				margin: 0 0 12px;
+				font-size: 1.25rem;
+			}
+
+			form {
+				display: grid;
+				gap: 10px;
+			}
+
+			label {
+				font-size: 0.9rem;
+				color: var(--muted);
+				display: grid;
+				gap: 5px;
+			}
+
+			input {
+				width: 100%;
+				padding: 10px 11px;
+				border: 1px solid var(--border);
+				border-radius: 9px;
+				font-size: 0.95rem;
+			}
+
+			input:focus {
+				outline: 2px solid rgba(10, 147, 150, 0.25);
+				border-color: var(--accent-2);
+			}
+
+			button {
+				padding: 10px 14px;
+				border: 0;
+				border-radius: 9px;
+				background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+				color: white;
+				font-size: 0.95rem;
+				font-weight: 600;
+				cursor: pointer;
+			}
+
+			button:hover {
+				filter: brightness(1.05);
+			}
+
+			.status {
+				min-height: 1.2rem;
+				font-size: 0.9rem;
+			}
+
+			.status.ok {
+				color: var(--ok);
+			}
+
+			.status.err {
+				color: var(--danger);
+			}
+
+			pre {
+				margin: 0;
+				padding: 12px;
+				border-radius: 10px;
+				background: #f2f5f7;
+				border: 1px solid #e0e5ea;
+				font-size: 0.82rem;
+				max-height: 300px;
+				overflow: auto;
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>Certifier API Test Utility</h1>
+			<p class="lead">Use these forms to test POST /api/mint and GET /api/verify/:tokenId on your local server.</p>
+
+			<div class="grid">
+				<section class="card">
+					<h2>Mint Certificate</h2>
+					<form id="mintForm">
+						<label>Recipient Address (to)
+							<input name="to" placeholder="0x..." required />
+						</label>
+						<label>Student Name
+							<input name="name" placeholder="Jane Doe" required />
+						</label>
+						<label>Course
+							<input name="course" placeholder="Blockchain 101" required />
+						</label>
+						<label>Issuer
+							<input name="issuer" placeholder="Certifier Academy" required />
+						</label>
+						<label>Image URL
+							<input name="image" placeholder="https://..." required />
+						</label>
+						<button type="submit">Mint</button>
+					</form>
+					<p id="mintStatus" class="status"></p>
+					<pre id="mintOutput">No request yet.</pre>
+				</section>
+
+				<section class="card">
+					<h2>Verify Certificate</h2>
+					<form id="verifyForm">
+						<label>Token ID
+							<input name="tokenId" type="number" min="0" step="1" placeholder="0" required />
+						</label>
+						<button type="submit">Verify</button>
+					</form>
+					<p id="verifyStatus" class="status"></p>
+					<pre id="verifyOutput">No request yet.</pre>
+				</section>
+			</div>
+		</main>
+
+		<script>
+			const setStatus = (el, ok, text) => {
+				el.textContent = text;
+				el.className = `status ${ok ? "ok" : "err"}`;
+			};
+
+			const stringify = (value) => JSON.stringify(value, null, 2);
+
+			const mintForm = document.getElementById("mintForm");
+			const mintStatus = document.getElementById("mintStatus");
+			const mintOutput = document.getElementById("mintOutput");
+
+			mintForm.addEventListener("submit", async (event) => {
+				event.preventDefault();
+				setStatus(mintStatus, true, "Submitting mint request...");
+
+				const formData = new FormData(mintForm);
+				const payload = {
+					to: String(formData.get("to") || ""),
+					name: String(formData.get("name") || ""),
+					course: String(formData.get("course") || ""),
+					issuer: String(formData.get("issuer") || ""),
+					image: String(formData.get("image") || ""),
+				};
+
+				try {
+					const response = await fetch("/api/mint", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(payload),
+					});
+					const data = await response.json();
+					mintOutput.textContent = stringify(data);
+					setStatus(mintStatus, response.ok, response.ok ? "Mint request succeeded." : "Mint request failed.");
+				} catch (error) {
+					setStatus(mintStatus, false, "Network error while minting.");
+					mintOutput.textContent = stringify({ error: String(error) });
+				}
+			});
+
+			const verifyForm = document.getElementById("verifyForm");
+			const verifyStatus = document.getElementById("verifyStatus");
+			const verifyOutput = document.getElementById("verifyOutput");
+
+			verifyForm.addEventListener("submit", async (event) => {
+				event.preventDefault();
+				setStatus(verifyStatus, true, "Verifying token...");
+
+				const formData = new FormData(verifyForm);
+				const tokenId = String(formData.get("tokenId") || "").trim();
+
+				try {
+					const response = await fetch(`/api/verify/${encodeURIComponent(tokenId)}`);
+					const data = await response.json();
+					verifyOutput.textContent = stringify(data);
+					setStatus(verifyStatus, response.ok, response.ok ? "Verify request succeeded." : "Verify request failed.");
+				} catch (error) {
+					setStatus(verifyStatus, false, "Network error while verifying.");
+					verifyOutput.textContent = stringify({ error: String(error) });
+				}
+			});
+		</script>
+	</body>
+</html>

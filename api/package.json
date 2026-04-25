@@ -1,0 +1,23 @@
+{
+	"name": "certifier-api",
+	"version": "1.0.0",
+	"private": true,
+	"packageManager": "pnpm@9.15.4",
+	"type": "module",
+	"scripts": {
+		"dev": "tsx watch src/index.ts",
+		"build": "tsc",
+		"start": "node dist/index.js"
+	},
+	"dependencies": {
+		"dotenv": "^17.4.2",
+		"ethers": "^6.16.0",
+		"express": "^4.21.2"
+	},
+	"devDependencies": {
+		"@types/express": "^5.0.0",
+		"@types/node": "^22.15.3",
+		"tsx": "^4.19.4",
+		"typescript": "^5.8.3"
+	}
+}
