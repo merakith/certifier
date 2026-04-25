@@ -14,14 +14,22 @@ export function Dashboard() {
     const fetchStats = async () => {
       try {
         const response = await fetch('/api/stats');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
         setStats({
-          totalVerified: data.totalVerified,
-          blockHeight: data.blockHeight,
-          network: data.network
+          totalVerified: data.totalVerified || '---',
+          blockHeight: data.blockHeight || '---',
+          network: data.network || 'OFFLINE'
         });
-      } catch (error) {
-        console.error("Dashboard stats fetch failed:", error);
+      } catch (error: any) {
+        // Log to console but provide a safe state for the UI
+        console.warn("Dashboard stats fetch background issue:", error.message || error);
+        setStats(prev => ({ 
+          ...prev, 
+          network: prev.network === 'FETCHING...' ? 'OFFLINE' : prev.network 
+        }));
       }
     };
     fetchStats();
@@ -32,13 +40,19 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-zinc-950 p-8 cyber-grid">
       <div className="max-w-[1400px] mx-auto space-y-12">
-        <header className="space-y-1">
+        <motion.header 
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false }}
+          transition={{ duration: 0.6 }}
+          className="space-y-1"
+        >
           <h1 className="text-3xl font-semibold text-white tracking-tight">System Overview</h1>
           <div className="flex items-center gap-4">
             <p className="text-zinc-500 text-xs font-medium">{stats.network === 'OFFLINE' ? 'Status: Idle' : 'Network Synchronized'} • Verification Alpha</p>
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
           </div>
-        </header>
+        </motion.header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
@@ -46,29 +60,38 @@ export function Dashboard() {
             { label: 'Current Block', value: stats.blockHeight, trend: 'Live', color: 'text-white' },
             { label: 'Node Status', value: stats.network, trend: 'Active', color: 'text-emerald-500' },
           ].map((stat, i) => (
-            <div key={i} className="p-8 rounded-3xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm group hover:bg-zinc-800/80 transition-all duration-300">
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: false, margin: "-50px" }}
+              transition={{ type: "spring", damping: 15, stiffness: 100, delay: i * 0.1 }}
+              className="p-8 rounded-3xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm group hover:bg-zinc-800/80 transition-all duration-300"
+            >
               <p className="text-xs font-medium text-zinc-500 mb-4">{stat.label}</p>
               <div className="flex items-end justify-between">
                 <span className="text-2xl font-mono text-white tracking-tighter">{stat.value}</span>
                 <span className={stat.color + " text-[10px] font-mono font-bold"}>[{stat.trend}]</span>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
+            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: false, margin: "-50px" }}
+            transition={{ type: "spring", damping: 12, stiffness: 100, delay: 0.1 }}
           >
             <IssueCertificate />
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
+            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: false, margin: "-50px" }}
+            transition={{ type: "spring", damping: 12, stiffness: 100, delay: 0.2 }}
           >
             <VerifyCertificate />
           </motion.div>
@@ -76,8 +99,10 @@ export function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9, y: 40 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: false, margin: "-50px" }}
+            transition={{ type: "spring", damping: 15, stiffness: 100 }}
             className="border border-zinc-800 bg-zinc-900/30 p-12 flex flex-col items-center justify-center text-center gap-8 relative overflow-hidden group min-h-[400px] rounded-3xl"
           >
             <div className="absolute inset-0 bg-emerald-500 opacity-[0.01] group-hover:opacity-[0.03] transition-opacity duration-700" />
@@ -95,9 +120,10 @@ export function Dashboard() {
           </motion.div>
 
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            initial={{ opacity: 0, scale: 0.9, y: 40 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: false, margin: "-50px" }}
+            transition={{ type: "spring", damping: 15, stiffness: 100, delay: 0.1 }}
             className="border border-zinc-800 bg-zinc-900/30 p-12 flex flex-col items-start gap-8 min-h-[400px] rounded-3xl overflow-hidden"
           >
             <h2 className="text-xs font-semibold text-white">Node Manifest</h2>

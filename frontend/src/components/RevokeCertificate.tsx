@@ -36,12 +36,24 @@ export function RevokeCertificate() {
 
   return (
     <div className="max-w-xl mx-auto space-y-12">
-      <div className="space-y-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+        viewport={{ once: false }}
+        transition={{ type: "spring", damping: 15, stiffness: 100 }}
+        className="space-y-4"
+      >
         <h1 className="text-3xl font-semibold text-white tracking-tight">Revoke Credential</h1>
         <p className="text-xs text-zinc-500">Invalidate anchored certificates from the blockchain consensus.</p>
-      </div>
+      </motion.div>
 
-      <div className="bg-zinc-900 border border-zinc-800 p-8 space-y-8 rounded-3xl shadow-2xl">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9, y: 40 }}
+        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+        viewport={{ once: false }}
+        transition={{ type: "spring", damping: 15, stiffness: 100, delay: 0.1 }}
+        className="bg-zinc-900 border border-zinc-800 p-8 space-y-8 rounded-3xl shadow-2xl"
+      >
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-rose-500">
             <AlertTriangle className="w-4 h-4" />
@@ -81,7 +93,7 @@ export function RevokeCertificate() {
             )}
           </button>
         </div>
-      </div>
+      </motion.div>
 
       <AnimatePresence>
         {result && (

@@ -96,10 +96,28 @@ export function IssueCertificate() {
       {!minted ? (
         <motion.div 
           key="issue-form"
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl"
+          initial={{ opacity: 0, scale: 0.9, y: 30 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: false, margin: "-50px" }}
+          transition={{ type: "spring", damping: 15, stiffness: 100 }}
+          className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative"
         >
+          {isMinting && (
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-zinc-800">
+              <motion.div 
+                initial={{ width: "0%" }}
+                animate={{ 
+                  width: ["10%", "85%", "10%"]
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+                className="absolute left-0 h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)]"
+              />
+            </div>
+          )}
           <div className="p-8 space-y-8">
             <div className="space-y-1">
               <h2 className="text-xl font-semibold text-white tracking-tight">Issue New Certificate</h2>
