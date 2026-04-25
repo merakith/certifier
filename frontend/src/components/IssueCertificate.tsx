@@ -16,10 +16,13 @@ import {
 import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
 import { issueCertificate, MintResponse } from '../services/api';
+import { GeometricLoader } from './GeometricLoader';
 
 export function IssueCertificate() {
   const [studentName, setStudentName] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
+  const [course, setCourse] = useState('B.SC COMPUTER SCIENCE');
+  const [issuer, setIssuer] = useState('GLOBAL_ACADEMIC_LEDGER');
   const [file, setFile] = useState<File | null>(null);
   const [fileHash, setFileHash] = useState<string | null>(null);
   const [isMinting, setIsMinting] = useState(false);
@@ -53,14 +56,23 @@ export function IssueCertificate() {
   } as any);
 
   const handleMint = async () => {
-    if (!studentName || !walletAddress || !fileHash) return;
+    if (!studentName || !walletAddress || !fileHash || !course || !issuer) return;
     setIsMinting(true);
     
     try {
-      const data = await issueCertificate(studentName, walletAddress, fileHash);
+      const data = await issueCertificate({
+        to: walletAddress,
+        name: studentName,
+        course: course,
+        issuer: issuer,
+        image: fileHash // Using fileHash as the "image" field represention
+      });
 
-      if (data.success && data.txHash) {
-        setTxDetails({ hash: data.txHash, tokenId: data.tokenId || 'N/A' });
+      if (data.status === "submitted" && data.transactionHash) {
+        setTxDetails({ 
+          hash: data.transactionHash, 
+          tokenId: 'PENDING_ON_CONSOLIDATION' // The index.ts doesn't return ID immediately usually, it waits for receipt or we assume next
+        });
         setMinted(true);
         toast.success('Certificate anchored to blockchain', {
           style: {
@@ -73,7 +85,7 @@ export function IssueCertificate() {
           },
         });
       } else {
-        toast.error(`Minting failed: ${data.error || 'Unknown error'}`, {
+        toast.error(`Minting failed`, {
           style: {
             background: '#18181b', // zinc-900
             color: '#fff',
@@ -84,10 +96,9 @@ export function IssueCertificate() {
           },
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('API Error:', error);
-      const message = error instanceof Error ? error.message : 'Unknown connection error';
-      toast.error(message, {
+      toast.error(error.message || 'Unknown connection error', {
         style: {
           background: '#18181b', // zinc-900
           color: '#fff',
@@ -153,6 +164,29 @@ export function IssueCertificate() {
                       placeholder="0x0000..."
                       className="w-full bg-zinc-950 border-b border-zinc-800 py-3 text-sm text-white focus:outline-none focus:border-white transition-all font-mono uppercase placeholder:text-zinc-800"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-mono text-zinc-500 uppercase">COURSE_TITLE</label>
+                      <input 
+                        type="text" 
+                        value={course}
+                        onChange={(e) => setCourse(e.target.value)}
+                        placeholder="e.g. COMPUTER SCIENCE"
+                        className="w-full bg-zinc-950 border-b border-zinc-800 py-3 text-[11px] text-white focus:outline-none focus:border-white transition-all font-mono uppercase placeholder:text-zinc-800"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-mono text-zinc-500 uppercase">ISSUING_ENTITY</label>
+                      <input 
+                        type="text" 
+                        value={issuer}
+                        onChange={(e) => setIssuer(e.target.value)}
+                        placeholder="e.g. UNIVERSITY_X"
+                        className="w-full bg-zinc-950 border-b border-zinc-800 py-3 text-[11px] text-white focus:outline-none focus:border-white transition-all font-mono uppercase placeholder:text-zinc-800"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -236,9 +270,7 @@ export function IssueCertificate() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-zinc-900 border border-emerald-500/50 p-20 flex flex-col items-center justify-center text-center gap-8"
           >
-            <div className="w-16 h-16 border-2 border-emerald-500 flex items-center justify-center">
-               <CheckCircle2 className="text-emerald-500 w-8 h-8" />
-            </div>
+            <GeometricLoader size="lg" />
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-white uppercase tracking-[0.2em]">ASSET_MINTED_SUCCESSFULLY</h2>
               <p className="text-[11px] font-mono text-zinc-500 max-w-sm mx-auto uppercase">

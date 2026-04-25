@@ -8,6 +8,7 @@ import { VerifyCertificate } from './components/VerifyCertificate';
 import { IssueCertificate } from './components/IssueCertificate';
 import { PublicVerify } from './components/PublicVerify';
 import { getCertificates } from './services/api';
+import { GeometricLoader } from './components/GeometricLoader';
 
 // Dashboard component
 const Dashboard = () => {
@@ -45,19 +46,38 @@ const Dashboard = () => {
     { label: 'NETWORK_NODES', value: '1,024', trend: 'ACTIVE', color: 'text-emerald-500' },
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 }
+  };
+
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
       className="space-y-12"
     >
-      <div className="flex flex-col gap-2 items-center text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-white uppercase tracking-[0.2em]">CORE_SYSTEM_INTERFACE</h1>
-        <div className="h-[1px] w-24 bg-white opacity-20" />
-        <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mt-2">{loading ? 'INITIALIZING_SESSION...' : 'SYSTEM_READY • SECURITY_LEVEL: ALPHA'}</p>
-      </div>
+      <motion.div variants={itemVariants} className="flex flex-col gap-6 items-center text-center">
+        <GeometricLoader />
+        <div className="flex flex-col gap-2 items-center">
+          <h1 className="text-4xl font-bold tracking-tight text-white uppercase tracking-[0.2em]">CORE_SYSTEM_INTERFACE</h1>
+          <div className="h-[1px] w-24 bg-white opacity-20" />
+          <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mt-2">{loading ? 'INITIALIZING_SESSION...' : 'SYSTEM_READY • SECURITY_LEVEL: ALPHA'}</p>
+        </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-zinc-800">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-zinc-800">
         {stats.map((stat, i) => (
           <div key={i} className="p-8 border-r last:border-r-0 border-zinc-800 bg-zinc-900 group hover:bg-zinc-800 transition-colors">
             <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-4">{stat.label}</p>
@@ -75,9 +95,9 @@ const Dashboard = () => {
             </div>
           </div>
         ))}
-      </div>
+      </motion.div>
 
-      <div className="space-y-4">
+      <motion.div variants={itemVariants} className="space-y-4">
         <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 px-2">RECENT_ISSUANCE_LEDGER</h3>
         
         <div className="border border-zinc-800 bg-zinc-900 overflow-hidden">
@@ -126,20 +146,20 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800">
-                  {certificates.map((cert, i) => (
+                  {certificates.map((cert: any, i) => (
                     <tr key={i} className="hover:bg-zinc-800/50 transition-colors">
                       <td className="p-4 font-mono text-[11px] text-white tracking-widest">
-                        {cert.recipientAddress?.slice(0, 8)}...{cert.recipientAddress?.slice(-8)}
+                        {cert.name || 'ANONYMOUS'}
                       </td>
                       <td className="p-4 font-mono text-[11px] text-zinc-400">
-                        {cert.fileHash?.slice(0, 16)}...
+                        {cert.to?.slice(0, 8)}...{cert.to?.slice(-8)}
                       </td>
-                      <td className="p-4 font-mono text-[10px] text-zinc-500 uppercase">
-                        {new Date(cert.timestamp).toLocaleDateString()} // {new Date(cert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <td className="p-4 font-mono text-[11px] text-zinc-500 uppercase">
+                        {cert.course}
                       </td>
                       <td className="p-4">
                         <span className="text-[9px] font-mono font-bold text-emerald-500 border border-emerald-500/30 px-2 py-0.5 uppercase tracking-tighter">
-                          CONFIRMED
+                          {cert.txHash ? 'CONFIRMED' : 'MOCK'}
                         </span>
                       </td>
                     </tr>
@@ -149,7 +169,7 @@ const Dashboard = () => {
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 };

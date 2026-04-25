@@ -4,21 +4,22 @@ import { ShieldCheck, Search, Cpu, FileCheck2, AlertCircle, ExternalLink, QrCode
 import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
 import { verifyCertificate } from '../services/api';
+import { GeometricLoader } from './GeometricLoader';
 
 export function VerifyCertificate() {
-  const [hash, setHash] = useState('');
+  const [tokenId, setTokenId] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [result, setResult] = useState<any>(null);
 
   const handleVerify = async () => {
-    if (!hash) return;
+    if (!tokenId) return;
     setIsVerifying(true);
     setResult(null);
     
     try {
-      const data = await verifyCertificate(hash);
-      if (data.success && data.isValid) {
-        setResult(data.metadata);
+      const data = await verifyCertificate(tokenId);
+      if (data.verified) {
+        setResult(data.metadata || { name: 'NOT_FOUND', course: 'N/A' });
         toast.success('Asset identity confirmed', {
           style: {
             background: '#18181b',
@@ -30,7 +31,7 @@ export function VerifyCertificate() {
           },
         });
       } else {
-        toast.error(data.error || 'Invalid certificate hash', {
+        toast.error(data.error || 'Token not verified on-chain', {
           style: {
             background: '#18181b',
             color: '#fff',
@@ -41,10 +42,9 @@ export function VerifyCertificate() {
           },
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Verification Error:', error);
-      const message = error instanceof Error ? error.message : 'Connection failed';
-      toast.error(message, {
+      toast.error(error.message || 'Connection failed', {
         style: {
           background: '#18181b',
           color: '#fff',
@@ -62,8 +62,8 @@ export function VerifyCertificate() {
   return (
     <div className="space-y-12">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-white uppercase tracking-widest">HASH_VERIFICATION_ENGINE</h1>
-        <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">CRYPTOGRAPHIC AUTHENTICATION LAYER // v2.4.0</p>
+        <h1 className="text-3xl font-bold text-white uppercase tracking-widest">ID_VERIFICATION_ENGINE</h1>
+        <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">PROTOCOL_V3 // ON-CHAIN VALIDATION LAYER</p>
       </div>
 
       <div className="bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-8 vault-border">
@@ -72,18 +72,18 @@ export function VerifyCertificate() {
             <Search className="w-5 h-5 text-zinc-600 self-center" />
             <input 
               type="text" 
-              value={hash}
-              onChange={(e) => setHash(e.target.value)}
-              placeholder="INPUT_HASH_HEX_STRING_0x..." 
+              value={tokenId}
+              onChange={(e) => setTokenId(e.target.value)}
+              placeholder="INPUT_TOKEN_ID_NUMERIC (e.g. 1024)" 
               className="bg-transparent border-none outline-none w-full text-sm text-white font-mono placeholder:text-zinc-700 uppercase tracking-widest"
             />
           </div>
           <button 
             onClick={handleVerify}
-            disabled={isVerifying || !hash}
+            disabled={isVerifying || !tokenId}
             className="bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-600 px-10 py-3 font-bold text-[11px] uppercase tracking-[0.2em] transition-all shrink-0"
           >
-            {isVerifying ? 'SCANNING...' : 'EXECUTE_QUERY'}
+            {isVerifying ? 'SYNCING...' : 'EXECUTE_QUERY'}
           </button>
         </div>
       </div>
@@ -96,7 +96,7 @@ export function VerifyCertificate() {
             exit={{ opacity: 0 }}
             className="bg-zinc-900 border border-zinc-800 border-dashed p-20 flex flex-col items-center justify-center gap-6"
           >
-            <div className="w-12 h-12 border-2 border-zinc-800 border-t-white animate-spin" />
+            <GeometricLoader size="md" />
             <div className="text-center space-y-1">
               <h3 className="text-sm font-bold text-white uppercase tracking-[0.2em]">NODE_CONSENSUS_SYNCING</h3>
               <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Querying Layer-1 Mainnet Validators...</p>
@@ -118,18 +118,50 @@ export function VerifyCertificate() {
 
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-12 gap-x-8 font-mono">
                   {[
-                    { label: 'ISSUER_ID', value: result.issuer },
-                    { label: 'CLASSIFICATION', value: result.type },
-                    { label: 'LEGAL_RECIPIENT', value: result.recipient },
-                    { label: 'BLOCK_TIMESTAMP', value: result.date },
-                    { label: 'CHAIN_HEIGHT', value: result.block },
-                    { label: 'ASSET_SIGNATURE', value: result.hash.slice(0, 16) + '...' },
+                    { label: 'LEGAL_RECIPIENT', value: result.name || 'N/A' },
+                    { label: 'CLASSIFICATION', value: result.course || 'N/A' },
+                    { label: 'ISSUER_ID', value: result.issuer || 'N/A' },
+                    { label: 'ASSET_HASH', value: result.image?.slice(0, 16) + '...' },
+                    { label: 'TOKEN_ID', value: `#${tokenId}` },
+                    { label: 'STATUS', value: 'VERIFIED_ON_CHAIN' },
                   ].map((item, i) => (
                     <div key={i} className="space-y-1">
                       <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-widest">{item.label}</p>
                       <p className="text-white text-[12px] font-bold tracking-tight uppercase">{item.value}</p>
                     </div>
                   ))}
+               </div>
+               <div className="mt-12 flex gap-4">
+                  <button 
+                    onClick={() => { setTokenId(''); setResult(null); }} 
+                    className="flex-1 px-8 bg-zinc-950 border border-zinc-800 text-zinc-400 font-bold py-4 text-[10px] uppercase tracking-widest hover:border-white hover:text-white transition-all"
+                  >
+                    [RESCAN_ACCOUNT]
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      if (!tokenId) return;
+                      const loadingToast = toast.loading('Initiating Burn Sequence...', {
+                        style: { background: '#18181b', color: '#fff', fontSize: '10px', fontFamily: 'JetBrains Mono, monospace', borderRadius: '0px' }
+                      });
+                      try {
+                        const { revokeCertificate } = await import('../services/api');
+                        const data = await revokeCertificate(tokenId);
+                        if (data.burned) {
+                          toast.success('Asset permanently revoked', { id: loadingToast });
+                          setResult(null);
+                          setTokenId('');
+                        } else {
+                          toast.error(data.error || 'Revocation rejected', { id: loadingToast });
+                        }
+                      } catch (err: any) {
+                        toast.error(err.message || 'Transmission failed', { id: loadingToast });
+                      }
+                    }}
+                    className="flex-1 px-8 bg-rose-950/20 border border-rose-500/30 text-rose-500 font-bold py-4 text-[10px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all"
+                  >
+                    [BURN_ASSET]
+                  </button>
                </div>
             </div>
 

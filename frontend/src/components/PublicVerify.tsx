@@ -15,13 +15,16 @@ import {
 import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
 import { verifyCertificate } from '../services/api';
+import { GeometricLoader } from './GeometricLoader';
 
 export function PublicVerify() {
   const [file, setFile] = useState<File | null>(null);
+  const [tokenId, setTokenId] = useState('');
   const [fileHash, setFileHash] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<'success' | 'failed' | null>(null);
   const [metadata, setMetadata] = useState<any>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   const calculateHash = async (file: File) => {
     const arrayBuffer = await file.arrayBuffer();
@@ -31,39 +34,18 @@ export function PublicVerify() {
     return hashHex;
   };
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const selectedFile = acceptedFiles[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setVerificationResult(null);
-      setIsVerifying(true);
-      
-      const hash = await calculateHash(selectedFile);
-      setFileHash(hash);
-
-      try {
-        const data = await verifyCertificate(hash);
-        if (data.success && data.isValid) {
-          setVerificationResult('success');
-          setMetadata(data.metadata);
-          toast.success('Integrity verified', {
-            style: {
-              background: '#18181b',
-              color: '#fff',
-              border: '1px solid #27272a',
-              fontSize: '10px',
-              fontFamily: 'JetBrains Mono, monospace',
-              borderRadius: '0px',
-            },
-          });
-        } else {
-          setVerificationResult('failed');
-        }
-      } catch (error) {
-        console.error('Verification Error:', error);
-        setVerificationResult('failed');
-        const message = error instanceof Error ? error.message : 'Connection error';
-        toast.error(message, {
+  const handleVerify = async () => {
+    if (!tokenId) return;
+    setIsVerifying(true);
+    setVerificationResult(null);
+    setErrorDetails(null);
+    
+    try {
+      const data = await verifyCertificate(tokenId);
+      if (data.verified) {
+        setVerificationResult('success');
+        setMetadata(data.metadata || {});
+        toast.success('Asset found on ledger', {
           style: {
             background: '#18181b',
             color: '#fff',
@@ -73,11 +55,37 @@ export function PublicVerify() {
             borderRadius: '0px',
           },
         });
-      } finally {
-        setIsVerifying(false);
+      } else {
+        setVerificationResult('failed');
+        setErrorDetails(data.error || 'Token ID not detected');
+      }
+    } catch (error: any) {
+      console.error('Verification Error:', error);
+      setVerificationResult('failed');
+      setErrorDetails(error.message || 'Connection error');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const selectedFile = acceptedFiles[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      const hash = await calculateHash(selectedFile);
+      setFileHash(hash);
+      
+      // If we already have metadata, check integrity
+      if (metadata) {
+        const expectedHash = metadata.image;
+        if (hash === expectedHash) {
+          toast.success('Binary integrity confirmed', { icon: '💎' });
+        } else {
+          toast.error('Hash mismatch: File may be altered');
+        }
       }
     }
-  }, []);
+  }, [metadata]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -102,31 +110,39 @@ export function PublicVerify() {
       </div>
 
       <AnimatePresence mode="wait">
-        {!file && !isVerifying && (
+        {!verificationResult && !isVerifying && (
           <motion.div
-            key="upload-zone"
+            key="input-zone"
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="group"
+            className="space-y-8"
           >
-            <div 
-              {...getRootProps()}
-              className={cn(
-                "bg-zinc-900/40 backdrop-blur-md scanning-frame p-20 cursor-pointer transition-all duration-700 min-h-[400px]",
-                isDragActive ? "border-indigo-500 bg-indigo-500/5 glow-indigo-sharp shadow-[0_0_50px_-12px_rgba(99,102,241,0.2)]" : "border-zinc-800 hover:border-zinc-500"
-              )}
-            >
-              <input {...getInputProps()} />
-              {isDragActive && <div className="scanning-line" />}
-              <div className="relative z-10 flex flex-col items-center">
-                 <div className="w-16 h-16 border border-zinc-800 flex items-center justify-center mb-10 group-hover:border-white transition-colors">
-                    <div className="w-8 h-[1px] bg-zinc-800 group-hover:bg-white" />
-                 </div>
-                 <h3 className="text-[11px] font-mono font-bold text-white uppercase tracking-[0.4em] mb-4">LOAD_SOURCE_DOCUMENT</h3>
-                 <p className="text-zinc-600 text-[10px] font-mono uppercase tracking-widest max-w-[200px] leading-relaxed">
-                   Device-side entropy generation. Zero sensitive data transmission.
-                 </p>
-                 <div className="mt-12 overflow-hidden h-[1px] w-0 group-hover:w-32 bg-white transition-all duration-700 opacity-20" />
+            <div className="bg-zinc-900 border border-zinc-800 p-8 space-y-8">
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-mono font-bold text-white uppercase tracking-[0.4em]">1. ENTER_TOKEN_ID</h3>
+                <div className="flex gap-4 border-b border-zinc-800 focus-within:border-white transition-colors">
+                  <Lock className="w-5 h-5 text-zinc-600 self-center" />
+                  <input 
+                    type="text" 
+                    value={tokenId}
+                    onChange={(e) => setTokenId(e.target.value)}
+                    placeholder="TOKEN_ID_NUMERIC" 
+                    className="flex-1 bg-transparent border-none outline-none py-4 text-xl text-white font-mono placeholder:text-zinc-800 uppercase tracking-widest"
+                  />
+                  <button 
+                    onClick={handleVerify}
+                    className="px-8 bg-white text-zinc-950 font-bold text-[11px] uppercase tracking-widest hover:bg-zinc-200 transition-all"
+                  >
+                    IDENTIFY
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 bg-zinc-950 border border-zinc-900 flex gap-4">
+                <div className="w-1 h-auto bg-zinc-800" />
+                <p className="text-[9px] font-mono text-zinc-600 uppercase leading-relaxed font-bold">
+                  Identify asset by its unique on-chain ID before performing manual binary integrity checks.
+                </p>
               </div>
             </div>
           </motion.div>
@@ -139,10 +155,10 @@ export function PublicVerify() {
             animate={{ opacity: 1 }}
             className="bg-zinc-900 border border-zinc-800 border-dashed p-32 flex flex-col items-center justify-center text-center gap-10"
           >
-            <div className="w-16 h-16 border border-zinc-800 border-t-white animate-spin" />
+            <GeometricLoader size="lg" />
             <div className="space-y-2">
               <h2 className="text-sm font-bold text-white uppercase tracking-[0.3em]">PROBING_GLOBAL_LEDGER</h2>
-              <p className="text-zinc-600 font-mono text-[9px] uppercase">SHA-256_FINGERPRINT: {fileHash?.slice(0, 24)}...</p>
+              <p className="text-zinc-600 font-mono text-[9px] uppercase">QUERY_TOKEN: #{tokenId}</p>
             </div>
           </motion.div>
         )}
@@ -164,36 +180,53 @@ export function PublicVerify() {
                      <ShieldCheck className="w-8 h-8 text-emerald-500" />
                   </div>
                   <div className="space-y-1 text-center md:text-left">
-                     <h2 className="text-2xl font-bold text-white uppercase tracking-widest font-mono">STATUS: VALIDATED</h2>
-                     <p className="text-emerald-500 font-mono text-[9px] font-bold uppercase tracking-[0.2em]">RECIPIENT: {metadata?.recipient}</p>
+                     <h2 className="text-2xl font-bold text-white uppercase tracking-widest font-mono">STATUS: DETECTED</h2>
+                     <p className="text-emerald-500 font-mono text-[9px] font-bold uppercase tracking-[0.2em]">RECIPIENT: {metadata?.name}</p>
                   </div>
                </div>
 
                <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-px bg-zinc-800">
                   <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">ISSUER</p>
+                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">ISSUING_ENTITY</p>
                      <p className="text-xs text-white font-mono truncate">{metadata?.issuer}</p>
                   </div>
                   <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">ASSET_HASH</p>
-                     <p className="text-xs text-emerald-500 font-mono truncate">{fileHash}</p>
-                  </div>
-                  <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">CHAIN_HEIGHT</p>
-                     <p className="text-xs text-white font-mono truncate">{metadata?.block}</p>
-                  </div>
-                  <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">TIMESTAMP</p>
-                     <p className="text-xs text-white font-mono truncate">{metadata?.date}</p>
+                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">COURSE_TITLE</p>
+                     <p className="text-xs text-white font-mono truncate">{metadata?.course}</p>
                   </div>
                </div>
 
-               <div className="mt-8 flex gap-4">
-                  <button className="flex-1 bg-white text-zinc-950 font-bold py-4 text-[10px] uppercase tracking-[0.3em] hover:bg-zinc-200 transition-all">
-                    BLOCK_EXPLORER
-                  </button>
+               <div className="mt-12 space-y-6">
+                 <h3 className="text-[10px] font-mono font-bold text-white uppercase tracking-[0.4em]">2. BINARY_INTEGRITY_CHECK (OPTIONAL)</h3>
+                 {!file ? (
+                   <div 
+                     {...getRootProps()}
+                     className={cn(
+                       "bg-zinc-950 border border-dashed border-zinc-800 p-12 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-white transition-all",
+                       isDragActive && "bg-emerald-500/5 border-emerald-500"
+                     )}
+                   >
+                     <input {...getInputProps()} />
+                     <Upload className="w-6 h-6 text-zinc-700" />
+                     <p className="text-[9px] font-mono text-zinc-500 uppercase">Drop asset to compare SHA-256 fingerprint</p>
+                   </div>
+                 ) : (
+                   <div className="bg-zinc-950 border border-zinc-800 p-6 flex items-center justify-between">
+                     <div className="flex items-center gap-4">
+                       <FileText className="w-5 h-5 text-emerald-500" />
+                       <div className="font-mono">
+                         <p className="text-[10px] text-white uppercase">{file.name}</p>
+                         <p className="text-[9px] text-zinc-600">{fileHash === metadata?.image ? 'INTEGRITY_VERIFIED' : 'INTEGRITY_FAILED'}</p>
+                       </div>
+                     </div>
+                     <button onClick={() => setFile(null)} className="text-zinc-600 hover:text-white uppercase text-[9px] font-bold">Clear</button>
+                   </div>
+                 )}
+               </div>
+
+               <div className="mt-12 flex gap-4">
                   <button onClick={reset} className="px-8 bg-zinc-950 border border-zinc-800 text-zinc-400 font-bold py-4 text-[10px] uppercase tracking-widest hover:border-white hover:text-white transition-all">
-                    [RESET_GATEWAY]
+                    [RESCAN_ACCOUT]
                   </button>
                </div>
             </div>
@@ -211,9 +244,9 @@ export function PublicVerify() {
                <ShieldAlert className="w-8 h-8 text-rose-500" />
             </div>
             <div className="space-y-4">
-               <h2 className="text-xl font-bold text-white uppercase tracking-widest underline decoration-rose-500/50 underline-offset-8">INTEGRITY_COMPROMISED</h2>
+               <h2 className="text-xl font-bold text-white uppercase tracking-widest underline decoration-rose-500/50 underline-offset-8">DETECTION_FAILED</h2>
                <p className="text-zinc-500 text-[10px] font-mono leading-relaxed max-w-xs mx-auto uppercase">
-                 The provided document does not exist within the primary or secondary validation nodes. Origin: Unknown.
+                 {errorDetails || 'TOKEN_ID_NOT_LOCATED_IN_LAYER_1'}
                </p>
             </div>
             <button onClick={reset} className="bg-white text-zinc-950 px-12 py-4 font-bold text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all">

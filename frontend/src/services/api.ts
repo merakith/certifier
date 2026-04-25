@@ -1,64 +1,76 @@
+export interface MintRequest {
+  to: string;
+  name: string;
+  course: string;
+  issuer: string;
+  image: string;
+}
+
 export interface MintResponse {
-  success: boolean;
-  txHash?: string;
-  tokenId?: string;
-  error?: string;
+  status: string;
+  message: string;
+  transactionHash: string;
+  blockNumber?: number | null;
+  data: MintRequest;
 }
 
 export interface VerifyResponse {
-  success: boolean;
-  isValid: boolean;
-  metadata?: {
-    issuer: string;
-    type: string;
-    recipient: string;
-    date: string;
-    block: number;
-    hash: string;
-  };
+  verified: boolean;
+  tokenId: string;
+  tokenUri?: string;
+  metadata?: any;
   error?: string;
+  details?: string;
 }
 
-const API_BASE_URL = '/api';
+export interface RevokeResponse {
+  burned: boolean;
+  tokenId: string;
+  error?: string;
+  details?: string;
+}
+
+const API_BASE_URL = 'http://192.168.0.244:7890/api';
 
 async function handleResponse(response: Response) {
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    throw new Error(data.details || data.error || `HTTP error! status: ${response.status}`);
   }
-  return response.json();
+  return data;
 }
 
-export async function issueCertificate(studentName: string, recipientAddress: string, fileHash: string): Promise<MintResponse> {
+export async function issueCertificate(request: MintRequest): Promise<MintResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/mint`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        studentName,
-        recipientAddress,
-        fileHash,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
     });
     return handleResponse(response);
-  } catch (error) {
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Server Connection Error: Unable to reach the minting service.');
-    }
+  } catch (error: any) {
+    console.error('Minting failed:', error);
     throw error;
   }
 }
 
-export async function verifyCertificate(hash: string): Promise<VerifyResponse> {
+export async function verifyCertificate(tokenId: string): Promise<VerifyResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/verify/${hash}`);
+    const response = await fetch(`${API_BASE_URL}/verify/${tokenId}`);
     return handleResponse(response);
-  } catch (error) {
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Server Connection Error: Unable to reach the verification service.');
-    }
+  } catch (error: any) {
+    console.error('Verification failed:', error);
+    throw error;
+  }
+}
+
+export async function revokeCertificate(tokenId: string): Promise<RevokeResponse> {
+  try {
+    // Backend uses GET for revoke per teammate snippet
+    const response = await fetch(`${API_BASE_URL}/revoke/${tokenId}`);
+    return handleResponse(response);
+  } catch (error: any) {
+    console.error('Revocation failed:', error);
     throw error;
   }
 }
@@ -66,12 +78,9 @@ export async function verifyCertificate(hash: string): Promise<VerifyResponse> {
 export async function getCertificates(): Promise<any[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/certificates`);
-    const data = await handleResponse(response);
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Server Connection Error: Unable to reach the certificate registry.');
-    }
-    throw error;
+    return handleResponse(response);
+  } catch (error: any) {
+    console.error('Failed to fetch certificates:', error);
+    return [];
   }
 }
