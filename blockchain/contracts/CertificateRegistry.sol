@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT License
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.24;
 
 contract CertificateRegistry {
     address public immutable owner;
