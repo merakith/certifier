@@ -178,6 +178,44 @@ app.get("/api/verify/:tokenId", async (request, response) => {
 	}
 });
 
+app.get("/api/revoke/:tokenId", async (request, response) => {
+	const tokenId = parseTokenId(request.params.tokenId);
+
+	if (tokenId === null) {
+		response.status(400).json({
+			error: "Invalid tokenId. Expected a non-negative integer.",
+		});
+		return;
+	}
+
+	const config = getContractConfig();
+
+	if (!config) {
+		response.status(500).json({
+			error: "Missing blockchain config. Set RPC_URL and CONTRACT_ADDRESS environment variables.",
+		});
+		return;
+	}
+
+	try {
+		const provider = new JsonRpcProvider(config.rpcUrl);
+		const contract = new Contract(config.contractAddress, CERTIFICATE_NFT_ABI, provider);
+
+		await contract.revokeCert(tokenId);
+
+		response.json({
+			burned: true,
+			tokenId: tokenId.toString()
+		});
+	} catch (error) {
+		response.status(404).json({
+			burned: false,
+			error: "Token could not be burned on-chain, maybe it doesn't exist.",
+			details: error instanceof Error ? error.message : "Unknown error",
+		});
+	}
+});
+
 app.listen(port, () => {
 	console.log(`Server listening on http://localhost:${port}`);
 });

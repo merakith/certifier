@@ -88,6 +88,11 @@ contract CertificateNFT is ERC721 {
         );
     }
 
+    function revokeCert(uint256 tokenId) external onlyOwner {
+        require(ownerOf(tokenId) != address(0), "Token does not exist");
+        _burn(tokenId);
+    }
+
     // openzepplin calls this funtion 
     function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
         address from = super._update(to, tokenId, auth);
@@ -98,5 +103,5 @@ contract CertificateNFT is ERC721 {
         }
 
         return from;
-   }
+    }
 }
