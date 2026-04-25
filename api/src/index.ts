@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import { Contract, JsonRpcProvider, Wallet } from "ethers";
 
