@@ -24,6 +24,7 @@ const isAddress = (value: string): boolean => {
 const CERTIFICATE_NFT_ABI = [
 	"function mint(address to, string name, string course, string issuer, string image) external",
 	"function tokenURI(uint256 tokenId) view returns (string)",
+	"function revokeCert(uint256 tokenId) external"
 ];
 
 const parseTokenId = (value: string): bigint | null => {
