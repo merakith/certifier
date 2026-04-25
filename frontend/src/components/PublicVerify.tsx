@@ -99,19 +99,27 @@ export function PublicVerify() {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 space-y-16">
-      <div className="text-center space-y-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+        viewport={{ once: false }}
+        transition={{ type: "spring", damping: 15, stiffness: 100 }}
+        className="text-center space-y-4"
+      >
         <h1 className="text-5xl font-bold text-white tracking-widest uppercase">Verification Portal</h1>
         <p className="text-zinc-500 text-xs max-w-sm mx-auto uppercase tracking-widest leading-loose">
           Secure cryptographic validation of educational credentials.
         </p>
-      </div>
+      </motion.div>
 
       <AnimatePresence mode="wait">
         {!file && !isVerifying && (
           <motion.div
             key="upload-zone"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.9, y: 40 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: false }}
+            transition={{ type: "spring", damping: 15, stiffness: 100, delay: 0.1 }}
             className="group"
           >
             <div 
