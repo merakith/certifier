@@ -100,10 +100,9 @@ export function PublicVerify() {
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 space-y-16">
       <div className="text-center space-y-4">
-        <h1 className="text-5xl font-bold text-white tracking-[0.2em] uppercase">PUBLIC_GATEWAY</h1>
-        <div className="h-[2px] w-12 bg-white mx-auto opacity-10" />
-        <p className="text-zinc-500 font-mono text-[10px] max-w-sm mx-auto uppercase tracking-widest leading-loose">
-          Cryptographic validation of educational assets against global consensus layers.
+        <h1 className="text-5xl font-bold text-white tracking-widest uppercase">Verification Portal</h1>
+        <p className="text-zinc-500 text-xs max-w-sm mx-auto uppercase tracking-widest leading-loose">
+          Secure cryptographic validation of educational credentials.
         </p>
       </div>
 
@@ -118,21 +117,19 @@ export function PublicVerify() {
             <div 
               {...getRootProps()}
               className={cn(
-                "bg-zinc-900/40 backdrop-blur-md scanning-frame p-20 cursor-pointer transition-all duration-700 min-h-[400px]",
-                isDragActive ? "border-indigo-500 bg-indigo-500/5 glow-indigo-sharp shadow-[0_0_50px_-12px_rgba(99,102,241,0.2)]" : "border-zinc-800 hover:border-zinc-500"
+                "bg-zinc-900/40 backdrop-blur-md p-20 cursor-pointer transition-all duration-700 min-h-[400px] border rounded-3xl",
+                isDragActive ? "border-emerald-500 bg-emerald-500/5 shadow-[0_0_50px_rgba(16,185,129,0.1)]" : "border-zinc-800 hover:border-zinc-500"
               )}
             >
               <input {...getInputProps()} />
-              {isDragActive && <div className="scanning-line" />}
               <div className="relative z-10 flex flex-col items-center">
-                 <div className="w-16 h-16 border border-zinc-800 flex items-center justify-center mb-10 group-hover:border-white transition-colors">
-                    <div className="w-8 h-[1px] bg-zinc-800 group-hover:bg-white" />
+                 <div className="w-16 h-16 border border-zinc-800 rounded-2xl flex items-center justify-center mb-10 group-hover:border-white transition-colors">
+                    <Upload className="w-6 h-6 text-zinc-600 group-hover:text-white" />
                  </div>
-                 <h3 className="text-[11px] font-mono font-bold text-white uppercase tracking-[0.4em] mb-4">LOAD_SOURCE_DOCUMENT</h3>
-                 <p className="text-zinc-600 text-[10px] font-mono uppercase tracking-widest max-w-[200px] leading-relaxed">
-                   Device-side entropy generation. Zero sensitive data transmission.
+                 <h3 className="text-sm font-semibold text-white tracking-wide mb-4">DRAG & DROP CERTIFICATE</h3>
+                 <p className="text-zinc-500 text-xs max-w-[240px] leading-relaxed">
+                   Select a PDF certificate to verify its authenticity on the blockchain.
                  </p>
-                 <div className="mt-12 overflow-hidden h-[1px] w-0 group-hover:w-32 bg-white transition-all duration-700 opacity-20" />
               </div>
             </div>
           </motion.div>

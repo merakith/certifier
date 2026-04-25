@@ -1,11 +1,11 @@
-import { LayoutDashboard, ShieldCheck, FileSearch, History, Settings, LogOut, Trash2 } from 'lucide-react';
+import { LayoutDashboard, History, Settings, LogOut, Trash2, Hexagon, ShieldCheck, FileSearch } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Control Center', path: '/' },
-  { icon: ShieldCheck, label: 'Mint Certificate', path: '/issue' },
-  { icon: ShieldCheck, label: 'Verify Entity', path: '/verify' },
+  { icon: ShieldCheck, label: 'Issue Credential', path: '/issue' },
+  { icon: FileSearch, label: 'Verify Entity', path: '/verify' },
   { icon: Trash2, label: 'Revoke Anchor', path: '/revoke' },
   { icon: History, label: 'Audit Log', path: '/history' },
   { icon: Settings, label: 'System Settings', path: '/settings' },
@@ -16,7 +16,7 @@ export function Sidebar() {
     <aside className="w-64 h-full bg-zinc-950 border-r border-zinc-800 flex flex-col z-20">
       <div className="p-8 flex items-center gap-3">
         <div className="w-8 h-8 bg-white/5 border border-zinc-800 rounded-xl flex items-center justify-center">
-          <ShieldCheck className="text-white w-5 h-5" />
+          <Hexagon className="text-white w-5 h-5" />
         </div>
         <span className="font-bold text-sm tracking-[0.2em] text-white">Certifier</span>
       </div>
@@ -27,7 +27,7 @@ export function Sidebar() {
             key={item.path}
             to={item.path}
             className={({ isActive }) => cn(
-              "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group text-[10px] font-bold uppercase tracking-widest",
+              "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group text-[11px] font-medium tracking-wide",
               isActive 
                 ? "bg-white text-zinc-950 shadow-[0_0_20px_rgba(255,255,255,0.1)]" 
                 : "text-zinc-500 hover:text-white hover:bg-white/5"

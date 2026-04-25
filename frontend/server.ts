@@ -10,7 +10,7 @@ const PORT = 3000;
 
 app.use(express.json());
 
-const API_BASE_URL = "http://192.168.0.244:7890";
+const API_BASE_URL = "http://10.187.116.168:800";
 
 // API Routes
 app.post("/api/mint", async (req, res) => {
@@ -52,36 +52,48 @@ app.post("/api/verify", async (req, res) => {
 });
 
 app.post("/api/revoke", async (req, res) => {
+  console.log("Proxying revoke request to:", `${API_BASE_URL}/api/revoke`);
   try {
     const response = await fetch(`${API_BASE_URL}/api/revoke`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(req.body)
     });
+    
     const data = await response.json();
+    console.log("External API Response:", { status: response.status, data });
+    
     res.status(response.status).json(data);
   } catch (error: any) {
-    console.error("External Revocation failed:", error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error("External Revocation proxy failed:", error);
+    res.status(500).json({ success: false, error: `PROXY_CONNECTION_ERROR: ${error.message}` });
   }
 });
 
 app.get("/api/stats", async (req, res) => {
   try {
-    // Attempt to fetch stats from external API if it exists, otherwise return fallback
-    const response = await fetch(`${API_BASE_URL}/api/stats`).catch(() => null);
+    console.log("Fetching stats from:", `${API_BASE_URL}/api/stats`);
+    const response = await fetch(`${API_BASE_URL}/api/stats`, { signal: AbortSignal.timeout(5000) }).catch(() => null);
+    
     if (response && response.ok) {
       const data = await response.json();
-      return res.json(data);
+      return res.json({
+        success: true,
+        totalVerified: data.totalVerified || "0",
+        blockHeight: data.blockHeight || "---",
+        network: data.network || "ONLINE"
+      });
     }
     
+    // Fallback if external API is unreachable
     res.json({
       success: true,
       totalVerified: "---",
       blockHeight: "L1_SYNCED",
-      network: "EXTERNAL_NODE"
+      network: "STANDBY"
     });
   } catch (error: any) {
+    console.error("Stats fetch failed:", error.message);
     res.json({
       success: false,
       totalVerified: "0",

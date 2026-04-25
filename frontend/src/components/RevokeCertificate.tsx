@@ -37,31 +37,31 @@ export function RevokeCertificate() {
   return (
     <div className="max-w-xl mx-auto space-y-12">
       <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-white uppercase tracking-widest">CERTIFICATE_REVOCATION</h1>
-        <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Invalidating anchored credentials from global consensus...</p>
+        <h1 className="text-3xl font-semibold text-white tracking-tight">Revoke Credential</h1>
+        <p className="text-xs text-zinc-500">Invalidate anchored certificates from the blockchain consensus.</p>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 p-8 space-y-8">
+      <div className="bg-zinc-900 border border-zinc-800 p-8 space-y-8 rounded-3xl shadow-2xl">
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-rose-500">
             <AlertTriangle className="w-4 h-4" />
-            <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest">CRITICAL_OPERATION</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider">Critical Operation</h3>
           </div>
-          <p className="text-[11px] font-mono text-zinc-500 leading-relaxed uppercase">
-            Revoking a certificate is an IRREVERSIBLE action. Once revoked, the cryptographic hash will be marked as INVALID across all network nodes.
+          <p className="text-xs text-zinc-500 leading-relaxed">
+            Revoking a certificate is an irreversible action. Once revoked, the cryptographic hash will be marked as invalid across all network nodes.
           </p>
         </div>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">IDENTIFIER (TOKEN_ID / HASH)</label>
+            <label className="text-xs font-medium text-zinc-400">Token ID or Hash</label>
             <div className="relative">
               <input 
                 type="text" 
                 value={tokenId}
                 onChange={(e) => setTokenId(e.target.value)}
-                placeholder="INPUT_ID_FOR_DESTRUCTION"
-                className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-mono text-white focus:outline-none focus:border-rose-500 transition-all uppercase placeholder:text-zinc-800"
+                placeholder="Enter ID for revocation"
+                className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-sans text-white focus:outline-none focus:border-rose-500 transition-all rounded-2xl placeholder:text-zinc-800 shadow-inner"
               />
             </div>
           </div>
@@ -69,15 +69,15 @@ export function RevokeCertificate() {
           <button 
             onClick={handleRevoke}
             disabled={!tokenId || isRevoking}
-            className="w-full bg-rose-600 text-white hover:bg-rose-700 disabled:bg-zinc-800 disabled:text-zinc-600 font-bold py-4 text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-2"
+            className="w-full bg-rose-600 text-white hover:bg-rose-700 disabled:bg-zinc-800 disabled:text-zinc-600 font-bold py-4 text-xs transition-all flex items-center justify-center gap-2 rounded-2xl shadow-xl shadow-rose-950/20"
           >
             {isRevoking ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                DESTROYING_ANCHOR...
+                Processing Revocation...
               </>
             ) : (
-              'EXECUTE_REVOCATION'
+              'Revoke Now'
             )}
           </button>
         </div>
@@ -88,14 +88,14 @@ export function RevokeCertificate() {
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-zinc-900 border border-emerald-500/50 p-6 flex flex-col items-center gap-4 text-center"
+            className="bg-zinc-900 border border-emerald-500/50 p-8 flex flex-col items-center gap-4 text-center rounded-3xl"
           >
-            <Trash2 className="text-rose-500 w-8 h-8" />
+            <Trash2 className="text-rose-500 w-10 h-10" />
             <div className="space-y-1">
-              <h2 className="text-emerald-500 font-bold uppercase tracking-widest">NODE_CONSENSUS_REACHED</h2>
-              <p className="text-[10px] font-mono text-zinc-500 uppercase">ANCHOR_PURGED_SUCCESSFULLY</p>
+              <h2 className="text-lg font-semibold text-emerald-500">Revocation Successful</h2>
+              <p className="text-xs text-zinc-500">The certificate has been purged from the active node.</p>
             </div>
-            <div className="bg-zinc-950 p-4 w-full text-[9px] font-mono text-zinc-600 break-all border border-zinc-800 uppercase">
+            <div className="bg-zinc-950 p-4 w-full text-[10px] font-mono text-zinc-600 break-all border border-zinc-800 rounded-2xl">
               TX_RECEIPT: {result.hash}
             </div>
           </motion.div>
@@ -105,12 +105,12 @@ export function RevokeCertificate() {
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-zinc-900 border border-rose-500/50 p-6 flex flex-col items-center gap-4 text-center"
+            className="bg-zinc-900 border border-rose-500/50 p-8 flex flex-col items-center gap-4 text-center rounded-3xl"
           >
-            <ShieldAlert className="text-rose-500 w-8 h-8" />
+            <ShieldAlert className="text-rose-500 w-10 h-10" />
             <div className="space-y-1">
-              <h2 className="text-rose-500 font-bold uppercase tracking-widest">OPERATION_ABORTED</h2>
-              <p className="text-[10px] font-mono text-zinc-600 uppercase italic whitespace-pre-wrap">{error}</p>
+              <h2 className="text-lg font-semibold text-rose-500">Operation Aborted</h2>
+              <p className="text-xs text-zinc-500 italic whitespace-pre-wrap">{error}</p>
             </div>
           </motion.div>
         )}

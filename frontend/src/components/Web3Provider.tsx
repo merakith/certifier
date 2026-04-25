@@ -36,7 +36,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
           theme={darkTheme({
             accentColor: '#10b981', // emerald-500
             accentColorForeground: 'black',
-            borderRadius: 'none',
+            borderRadius: 'large',
             fontStack: 'system',
             overlayBlur: 'large',
           })}

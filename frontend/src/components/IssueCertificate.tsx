@@ -94,67 +94,67 @@ export function IssueCertificate() {
         >
           <div className="p-8 space-y-8">
             <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-white tracking-tight">ASSET_MINTING_NODE</h2>
-              <p className="text-[10px] font-mono text-zinc-600 uppercase">Input metadata for L1 synchronization</p>
+              <h2 className="text-xl font-semibold text-white tracking-tight">Issue New Certificate</h2>
+              <p className="text-xs text-zinc-500">Provide recipient and course details for blockchain anchoring.</p>
             </div>
             
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">RECIPIENT_ADDRESS</label>
+                  <label className="text-xs font-medium text-zinc-400">Recipient wallet address</label>
                   <input 
                     type="text" 
                     value={walletAddress}
                     onChange={(e) => setWalletAddress(e.target.value)}
                     placeholder="0x..."
-                    className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-mono text-white focus:outline-none focus:border-white transition-all rounded-xl placeholder:text-zinc-800"
+                    className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-sans text-white focus:outline-none focus:border-emerald-500 transition-all rounded-2xl placeholder:text-zinc-800 shadow-inner"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">STUDENT_IDENTIFIER</label>
+                  <label className="text-xs font-medium text-zinc-400">Student full name</label>
                   <input 
                     type="text" 
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
                     placeholder="Jane Doe"
-                    className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-mono text-white focus:outline-none focus:border-white transition-all rounded-xl placeholder:text-zinc-800"
+                    className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-sans text-white focus:outline-none focus:border-emerald-500 transition-all rounded-2xl placeholder:text-zinc-800 shadow-inner"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">COURSE_TITLE</label>
+                  <label className="text-xs font-medium text-zinc-400">Course title</label>
                   <input 
                     type="text" 
                     value={course}
                     onChange={(e) => setCourse(e.target.value)}
-                    placeholder="Blockchain 101"
-                    className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-mono text-white focus:outline-none focus:border-white transition-all rounded-xl placeholder:text-zinc-800"
+                    placeholder="Blockchain Fundamentals"
+                    className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-sans text-white focus:outline-none focus:border-emerald-500 transition-all rounded-2xl placeholder:text-zinc-800 shadow-inner"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">ISSUING_AUTHORITY</label>
+                  <label className="text-xs font-medium text-zinc-400">Issuing institution</label>
                   <input 
                     type="text" 
                     value={issuer}
                     onChange={(e) => setIssuer(e.target.value)}
                     placeholder="Certifier Academy"
-                    className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-mono text-white focus:outline-none focus:border-white transition-all rounded-xl placeholder:text-zinc-800"
+                    className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-sans text-white focus:outline-none focus:border-emerald-500 transition-all rounded-2xl placeholder:text-zinc-800 shadow-inner"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">RESOURCE_IMAGE_URL</label>
+                <label className="text-xs font-medium text-zinc-400">Certificate image URL</label>
                 <input 
                   type="text" 
                   value={imageURL}
                   onChange={(e) => setImageURL(e.target.value)}
-                  placeholder="https://resources.ipfs..."
-                  className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-mono text-white focus:outline-none focus:border-white transition-all rounded-xl placeholder:text-zinc-800"
+                  placeholder="https://ipfs.io/ipfs/..."
+                  className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-sans text-white focus:outline-none focus:border-emerald-500 transition-all rounded-2xl placeholder:text-zinc-800 shadow-inner"
                 />
               </div>
             </div>
@@ -162,7 +162,7 @@ export function IssueCertificate() {
             <button 
               onClick={handleMint}
               disabled={!studentName || !walletAddress || !course || !issuer || !imageURL || isMinting}
-              className="w-full bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-700 font-bold py-4 text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-2 rounded-xl"
+              className="w-full bg-emerald-500 text-white hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-600 font-bold py-4 text-xs transition-all flex items-center justify-center gap-2 rounded-2xl shadow-lg shadow-emerald-500/20"
             >
               {isMinting ? (
                   <>

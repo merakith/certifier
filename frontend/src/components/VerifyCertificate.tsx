@@ -71,35 +71,35 @@ export function VerifyCertificate() {
       <div className="p-8 space-y-8 flex-1">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h2 className="text-xl font-semibold text-white tracking-tight">VERIFICATION_NODE</h2>
-            <p className="text-[10px] font-mono text-zinc-600 uppercase">Input Token ID for network validation</p>
+            <h2 className="text-xl font-semibold text-white tracking-tight">Verify Credential</h2>
+            <p className="text-xs text-zinc-500">Input Token ID for network validation</p>
           </div>
           <Search className="w-5 h-5 text-zinc-700" />
         </div>
         
         <div className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">TOKEN_IDENTIFIER</label>
+            <label className="text-xs font-medium text-zinc-400">Credential token ID</label>
             <input 
               type="text" 
               value={tokenId}
               onChange={(e) => setTokenId(e.target.value)}
-              placeholder="0"
-              className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-mono text-white focus:outline-none focus:border-white transition-all rounded-xl placeholder:text-zinc-800"
+              placeholder="e.g. 1024"
+              className="w-full bg-zinc-950 border border-zinc-800 p-4 text-sm font-sans text-white focus:outline-none focus:border-emerald-500 transition-all rounded-2xl placeholder:text-zinc-800 shadow-inner"
             />
           </div>
 
           <button 
             onClick={handleVerify}
             disabled={!tokenId || isVerifying}
-            className="w-full bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-700 font-bold py-4 text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-2 rounded-xl"
+            className="w-full bg-white text-zinc-950 hover:bg-zinc-100 disabled:bg-zinc-800 disabled:text-zinc-600 font-bold py-4 text-xs transition-all flex items-center justify-center gap-2 rounded-2xl shadow-xl shadow-white/5"
           >
             {isVerifying ? (
               <>
                  <Loader2 className="w-4 h-4 animate-spin" />
-                 {VERIFY_STATES[verifyStatusIndex]}...
+                 Processing...
               </>
-            ) : 'START_VERIFICATION'}
+            ) : 'Verify Now'}
           </button>
         </div>
 
