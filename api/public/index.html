@@ -17,9 +17,7 @@
 				--border: #d9d6cd;
 			}
 
-			* {
-				box-sizing: border-box;
-			}
+			* { box-sizing: border-box; }
 
 			body {
 				margin: 0;
@@ -29,20 +27,13 @@
 			}
 
 			main {
-				max-width: 980px;
+				max-width: 1100px;
 				margin: 0 auto;
 				padding: 24px 16px 56px;
 			}
 
-			h1 {
-				margin: 0 0 6px;
-				font-size: 1.9rem;
-			}
-
-			p.lead {
-				margin: 0 0 24px;
-				color: var(--muted);
-			}
+			h1 { margin: 0 0 6px; font-size: 1.9rem; }
+			p.lead { margin: 0 0 24px; color: var(--muted); }
 
 			.grid {
 				display: grid;
@@ -55,18 +46,14 @@
 				border: 1px solid var(--border);
 				border-radius: 14px;
 				padding: 16px;
-				box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+				box-shadow: 0 8px 20px rgba(0,0,0,0.04);
 			}
 
-			h2 {
-				margin: 0 0 12px;
-				font-size: 1.25rem;
-			}
+			.card.wide { grid-column: 1 / -1; }
 
-			form {
-				display: grid;
-				gap: 10px;
-			}
+			h2 { margin: 0 0 12px; font-size: 1.25rem; }
+
+			form { display: grid; gap: 10px; }
 
 			label {
 				font-size: 0.9rem;
@@ -75,17 +62,25 @@
 				gap: 5px;
 			}
 
-			input {
+			input, textarea {
 				width: 100%;
 				padding: 10px 11px;
 				border: 1px solid var(--border);
 				border-radius: 9px;
 				font-size: 0.95rem;
+				font-family: inherit;
 			}
 
-			input:focus {
-				outline: 2px solid rgba(10, 147, 150, 0.25);
+			input:focus, textarea:focus {
+				outline: 2px solid rgba(10,147,150,0.25);
 				border-color: var(--accent-2);
+			}
+
+			textarea {
+				resize: vertical;
+				min-height: 120px;
+				font-family: "Courier New", monospace;
+				font-size: 0.85rem;
 			}
 
 			button {
@@ -99,22 +94,11 @@
 				cursor: pointer;
 			}
 
-			button:hover {
-				filter: brightness(1.05);
-			}
+			button:hover { filter: brightness(1.05); }
 
-			.status {
-				min-height: 1.2rem;
-				font-size: 0.9rem;
-			}
-
-			.status.ok {
-				color: var(--ok);
-			}
-
-			.status.err {
-				color: var(--danger);
-			}
+			.status { min-height: 1.2rem; font-size: 0.9rem; }
+			.status.ok { color: var(--ok); }
+			.status.err { color: var(--danger); }
 
 			pre {
 				margin: 0;
@@ -126,14 +110,69 @@
 				max-height: 300px;
 				overflow: auto;
 			}
+
+			.csv-hint {
+				font-size: 0.8rem;
+				color: var(--muted);
+				background: #f2f5f7;
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				padding: 8px 10px;
+				font-family: "Courier New", monospace;
+			}
+
+			.bulk-results {
+				margin-top: 12px;
+				display: grid;
+				gap: 6px;
+			}
+
+			.bulk-row {
+				font-size: 0.82rem;
+				padding: 6px 10px;
+				border-radius: 7px;
+				border: 1px solid var(--border);
+				background: #fafafa;
+			}
+
+			.bulk-row.ok { border-color: #b7dfb9; background: #f0faf0; }
+			.bulk-row.err { border-color: #f5b7b1; background: #fdf0f0; }
+
+			.summary {
+				font-size: 0.88rem;
+				font-weight: 600;
+				margin-bottom: 6px;
+			}
+
+			.file-input-wrapper {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+			}
+
+			.file-label {
+				display: inline-block;
+				padding: 8px 14px;
+				border: 1px dashed var(--accent-2);
+				border-radius: 9px;
+				font-size: 0.88rem;
+				color: var(--accent);
+				cursor: pointer;
+				background: #f0fafb;
+			}
+
+			.file-label:hover { background: #e0f4f5; }
+			#csvFileName { font-size: 0.85rem; color: var(--muted); }
 		</style>
 	</head>
 	<body>
 		<main>
 			<h1>Certifier API Test Utility</h1>
-			<p class="lead">Use these forms to test POST /api/mint, GET /api/verify/:tokenId, and GET /api/revoke/:tokenId on your local server.</p>
+			<p class="lead">Test POST /api/mint, GET /api/verify/:tokenId, GET /api/revoke/:tokenId, and POST /api/mint/bulk/csv.</p>
 
 			<div class="grid">
+
+				<!-- ── Mint ── -->
 				<section class="card">
 					<h2>Mint Certificate</h2>
 					<form id="mintForm">
@@ -150,7 +189,7 @@
 							<input name="issuer" placeholder="Certifier Academy" required />
 						</label>
 						<label>Image URL
-							<input name="image" placeholder="https://..." required />
+							<input name="image" placeholder="https://... or ipfs://Qm..." required />
 						</label>
 						<button type="submit">Mint</button>
 					</form>
@@ -158,6 +197,7 @@
 					<pre id="mintOutput">No request yet.</pre>
 				</section>
 
+				<!-- ── Verify ── -->
 				<section class="card">
 					<h2>Verify Certificate</h2>
 					<form id="verifyForm">
@@ -170,6 +210,7 @@
 					<pre id="verifyOutput">No request yet.</pre>
 				</section>
 
+				<!-- ── Revoke ── -->
 				<section class="card">
 					<h2>Revoke Certificate</h2>
 					<form id="revokeForm">
@@ -181,6 +222,25 @@
 					<p id="revokeStatus" class="status"></p>
 					<pre id="revokeOutput">No request yet.</pre>
 				</section>
+
+				<!-- ── Bulk CSV Mint ── -->
+				<section class="card wide">
+					<h2>Bulk Mint via CSV</h2>
+					<p class="csv-hint">to,name,course,issuer,image<br>0xAbc...,Alice,Web3 Bootcamp,Uni,https://...<br>0xDef...,Bob,Web3 Bootcamp,Uni,https://...</p>
+					<form id="bulkForm" style="margin-top:12px;">
+						<label>Upload CSV file
+							<div class="file-input-wrapper">
+								<label class="file-label" for="csvFile">Choose file</label>
+								<span id="csvFileName">No file chosen</span>
+							</div>
+							<input id="csvFile" type="file" accept=".csv,text/csv" style="display:none" required />
+						</label>
+						<button type="submit">Bulk Mint</button>
+					</form>
+					<p id="bulkStatus" class="status"></p>
+					<div id="bulkResults"></div>
+				</section>
+
 			</div>
 		</main>
 
@@ -189,82 +249,115 @@
 				el.textContent = text;
 				el.className = `status ${ok ? "ok" : "err"}`;
 			};
+			const stringify = (v) => JSON.stringify(v, null, 2);
 
-			const stringify = (value) => JSON.stringify(value, null, 2);
-
-			const mintForm = document.getElementById("mintForm");
-			const mintStatus = document.getElementById("mintStatus");
-			const mintOutput = document.getElementById("mintOutput");
-
-			mintForm.addEventListener("submit", async (event) => {
-				event.preventDefault();
+			// ── Mint ──────────────────────────────────────────────────────────
+			document.getElementById("mintForm").addEventListener("submit", async (e) => {
+				e.preventDefault();
+				const mintStatus = document.getElementById("mintStatus");
+				const mintOutput = document.getElementById("mintOutput");
 				setStatus(mintStatus, true, "Submitting mint request...");
-
-				const formData = new FormData(mintForm);
-				const payload = {
-					to: String(formData.get("to") || ""),
-					name: String(formData.get("name") || ""),
-					course: String(formData.get("course") || ""),
-					issuer: String(formData.get("issuer") || ""),
-					image: String(formData.get("image") || ""),
-				};
-
+				const fd = new FormData(e.target);
+				const payload = Object.fromEntries(["to","name","course","issuer","image"].map(k => [k, String(fd.get(k) || "")]));
 				try {
-					const response = await fetch("/api/mint", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify(payload),
-					});
-					const data = await response.json();
+					const r = await fetch("/api/mint", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+					const data = await r.json();
 					mintOutput.textContent = stringify(data);
-					setStatus(mintStatus, response.ok, response.ok ? "Mint request succeeded." : "Mint request failed.");
-				} catch (error) {
-					setStatus(mintStatus, false, "Network error while minting.");
-					mintOutput.textContent = stringify({ error: String(error) });
+					if (data.ipfsURI) {
+						const cid = data.ipfsURI.replace("ipfs://", "");
+						mintOutput.innerHTML += `\n\n<a href="https://gateway.pinata.cloud/ipfs/${cid}" target="_blank">View on IPFS</a>`;
+					}
+					setStatus(mintStatus, r.ok, r.ok ? "Mint succeeded." : "Mint failed.");
+				} catch (err) {
+					setStatus(mintStatus, false, "Network error.");
+					mintOutput.textContent = stringify({ error: String(err) });
 				}
 			});
 
-			const verifyForm = document.getElementById("verifyForm");
-			const verifyStatus = document.getElementById("verifyStatus");
-			const verifyOutput = document.getElementById("verifyOutput");
-
-			verifyForm.addEventListener("submit", async (event) => {
-				event.preventDefault();
-				setStatus(verifyStatus, true, "Verifying token...");
-
-				const formData = new FormData(verifyForm);
-				const tokenId = String(formData.get("tokenId") || "").trim();
-
+			// ── Verify ────────────────────────────────────────────────────────
+			document.getElementById("verifyForm").addEventListener("submit", async (e) => {
+				e.preventDefault();
+				const verifyStatus = document.getElementById("verifyStatus");
+				const verifyOutput = document.getElementById("verifyOutput");
+				setStatus(verifyStatus, true, "Verifying...");
+				const tokenId = String(new FormData(e.target).get("tokenId") || "").trim();
 				try {
-					const response = await fetch(`/api/verify/${encodeURIComponent(tokenId)}`);
-					const data = await response.json();
+					const r = await fetch(`/api/verify/${encodeURIComponent(tokenId)}`);
+					const data = await r.json();
 					verifyOutput.textContent = stringify(data);
-					setStatus(verifyStatus, response.ok, response.ok ? "Verify request succeeded." : "Verify request failed.");
-				} catch (error) {
-					setStatus(verifyStatus, false, "Network error while verifying.");
-					verifyOutput.textContent = stringify({ error: String(error) });
+					setStatus(verifyStatus, r.ok, r.ok ? "Verified." : "Verification failed.");
+				} catch (err) {
+					setStatus(verifyStatus, false, "Network error.");
+					verifyOutput.textContent = stringify({ error: String(err) });
 				}
 			});
 
-			const revokeForm = document.getElementById("revokeForm");
-			const revokeStatus = document.getElementById("revokeStatus");
-			const revokeOutput = document.getElementById("revokeOutput");
+			// ── Revoke ────────────────────────────────────────────────────────
+			document.getElementById("revokeForm").addEventListener("submit", async (e) => {
+				e.preventDefault();
+				const revokeStatus = document.getElementById("revokeStatus");
+				const revokeOutput = document.getElementById("revokeOutput");
+				setStatus(revokeStatus, true, "Revoking...");
+				const tokenId = String(new FormData(e.target).get("tokenId") || "").trim();
+				try {
+					const r = await fetch(`/api/revoke/${encodeURIComponent(tokenId)}`);
+					const data = await r.json();
+					revokeOutput.textContent = stringify(data);
+					setStatus(revokeStatus, r.ok, r.ok ? "Revoked." : "Revoke failed.");
+				} catch (err) {
+					setStatus(revokeStatus, false, "Network error.");
+					revokeOutput.textContent = stringify({ error: String(err) });
+				}
+			});
 
-			revokeForm.addEventListener("submit", async (event) => {
-				event.preventDefault();
-				setStatus(revokeStatus, true, "Revoking token...");
+			// ── Bulk CSV ──────────────────────────────────────────────────────
+			document.getElementById("csvFile").addEventListener("change", (e) => {
+				document.getElementById("csvFileName").textContent = e.target.files[0]?.name || "No file chosen";
+			});
 
-				const formData = new FormData(revokeForm);
-				const tokenId = String(formData.get("tokenId") || "").trim();
+			document.getElementById("bulkForm").addEventListener("submit", async (e) => {
+				e.preventDefault();
+				const bulkStatus = document.getElementById("bulkStatus");
+				const bulkResults = document.getElementById("bulkResults");
+				bulkResults.innerHTML = "";
+				setStatus(bulkStatus, true, "Uploading and minting...");
+
+				const file = document.getElementById("csvFile").files[0];
+				if (!file) { setStatus(bulkStatus, false, "No file selected."); return; }
+
+				const csvText = await file.text();
 
 				try {
-					const response = await fetch(`/api/revoke/${encodeURIComponent(tokenId)}`);
-					const data = await response.json();
-					revokeOutput.textContent = stringify(data);
-					setStatus(revokeStatus, response.ok, response.ok ? "Revoke request succeeded." : "Revoke request failed.");
-				} catch (error) {
-					setStatus(revokeStatus, false, "Network error while revoking.");
-					revokeOutput.textContent = stringify({ error: String(error) });
+					const r = await fetch("/api/mint/bulk/csv", {
+						method: "POST",
+						headers: { "Content-Type": "text/csv" },
+						body: csvText,
+					});
+					const data = await r.json();
+
+					setStatus(bulkStatus, r.ok,
+						r.ok
+							? `Done — ${data.succeeded} succeeded, ${data.failed} failed.`
+							: "Bulk mint failed."
+					);
+
+					if (data.results) {
+						bulkResults.innerHTML = `<div class="summary">Total: ${data.total} | ${data.succeeded} | ❌ ${data.failed}</div>`;
+						data.results.forEach(row => {
+							const div = document.createElement("div");
+							div.className = `bulk-row ${row.status === "submitted" ? "ok" : "err"}`;
+							if (row.status === "submitted") {
+								const cid = row.ipfsURI?.replace("ipfs://", "");
+								div.innerHTML = `Row ${row.rowNumber}  <b>${row.name}</b> → tokenId <b>${row.tokenId}</b> | tx: ${row.transactionHash} | <a href="https://gateway.pinata.cloud/ipfs/${cid}" target="_blank">View on IPFS</a>`;
+							} else {
+								div.textContent = `Row ${row.rowNumber}  ${row.name || "?"} — ${row.error}`;
+							}
+							bulkResults.appendChild(div);
+						});
+					}
+				} catch (err) {
+					setStatus(bulkStatus, false, "Network error.");
+					bulkResults.innerHTML = "";
 				}
 			});
 		</script>

@@ -15,6 +15,20 @@ type IssueCertificateRequest = {
   image:  string;   // URL or ipfs:// to the certificate image
 };
 
+type BulkIssueCertificateResult = {
+  rowNumber:       number;
+  to:              string;
+  name:            string;
+  course:          string;
+  issuer:          string;
+  image:           string;
+  status:          "submitted" | "failed";
+  tokenId:         string | null;
+  transactionHash: string | null;
+  error:           string | null;
+  ipfsURI:         string | null;
+};
+
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
 const isNonEmptyString = (v: unknown): v is string =>
@@ -188,6 +202,106 @@ app.post("/api/mint", async (req, res) => {
       details: error instanceof Error ? error.message : "Unknown error",
     });
   }
+});
+
+// bulk mint
+const BULK_MINT_COLUMNS = ["to", "name", "course", "issuer", "image"] as const;
+const MAX_BULK_MINT_ROWS = 500;
+type BulkMintRow = Record<typeof BULK_MINT_COLUMNS[number], string>;
+app.post("/api/mint/bulk/csv", express.text({ type: "text/csv" }), async (req, res) => {
+  if (!req.body) {
+    res.status(400).json({ error: "No CSV body provided." });
+    return;
+  }
+
+  const lines = (req.body as string).trim().split("\n");
+  const headers = lines[0].split(",").map(h => h.trim());
+
+  const missingCols = BULK_MINT_COLUMNS.filter(c => !headers.includes(c));
+  if (missingCols.length > 0) {
+    res.status(400).json({ error: `Missing columns: ${missingCols.join(", ")}` });
+    return;
+  }
+
+  const dataLines = lines.slice(1).filter(l => l.trim().length > 0);
+
+  if (dataLines.length === 0) {
+    res.status(400).json({ error: "CSV has no data rows." });
+    return;
+  }
+
+  if (dataLines.length > MAX_BULK_MINT_ROWS) {
+    res.status(400).json({ error: `Too many rows. Max is ${MAX_BULK_MINT_ROWS}.` });
+    return;
+  }
+
+  const rows: BulkMintRow[] = dataLines.map(line => {
+    const values = line.split(",").map(v => v.trim());
+    return Object.fromEntries(
+      BULK_MINT_COLUMNS.map(col => [col, values[headers.indexOf(col)] ?? ""])
+    ) as BulkMintRow;
+  });
+
+  const config = getContractConfig();
+  if (!config) { res.status(500).json({ error: "Missing RPC_URL or CONTRACT_ADDRESS." }); return; }
+
+  const privateKey = getOwnerPrivateKey();
+  if (!privateKey) { res.status(500).json({ error: "Missing OWNER_PRIVATE_KEY." }); return; }
+
+  const provider = new JsonRpcProvider(config.rpcUrl);
+  const signer   = new Wallet(privateKey, provider);
+  const contract = new Contract(config.contractAddress, CERTIFICATE_NFT_ABI, signer);
+
+  const results: BulkIssueCertificateResult[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const { to, name, course, issuer, image } = rows[i];
+
+    if (!isNonEmptyString(to) || !isAddress(to) || !isNonEmptyString(name) ||
+        !isNonEmptyString(course) || !isNonEmptyString(issuer) || !isNonEmptyString(image)) {
+      results.push({ rowNumber: i + 2, to, name, course, issuer, image, status: "failed", tokenId: null, transactionHash: null, ipfsURI:null, error: "Invalid or missing fields." });
+      continue;
+    }
+
+    try {
+      const metadata = {
+        name:        `Certificate - ${name}`,
+        description: `${name} completed ${course}, issued by ${issuer}.`,
+        image,
+        attributes: [
+          { trait_type: "Course",    value: course },
+          { trait_type: "Issuer",    value: issuer },
+          { trait_type: "Recipient", value: name   },
+          { trait_type: "Issued",    value: new Date().toISOString() },
+        ],
+      };
+
+      const ipfsURI = await pinMetadataToIPFS(metadata);
+      const tx      = await contract.mint(to, ipfsURI);
+      const receipt = await tx.wait();
+
+      let tokenId: string | null = null;
+      if (receipt) {
+        for (const log of receipt.logs) {
+          if (log.address.toLowerCase() !== config.contractAddress.toLowerCase()) continue;
+          try {
+            const parsed = contract.interface.parseLog(log);
+            if (parsed?.name === "CertificateMinted") { tokenId = parsed.args.tokenId.toString(); break; }
+          } catch { continue; }
+        }
+      }
+
+      results.push({ rowNumber: i + 2, to, name, course, issuer, image, status: "submitted", tokenId, transactionHash: tx.hash, ipfsURI, error: null });
+
+    } catch (error) {
+      results.push({ rowNumber: i + 2, to, name, course, issuer, image, status: "failed", tokenId: null, transactionHash: null, ipfsURI: null, error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  }
+
+  const succeeded = results.filter(r => r.status === "submitted").length;
+  const failed    = results.filter(r => r.status === "failed").length;
+
+  res.status(202).json({ total: rows.length, succeeded, failed, results });
 });
 
 // ─── GET /api/verify/:tokenId ─────────────────────────────────────────────────
