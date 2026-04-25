@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-zinc-950: #09090b;
+  --color-zinc-900: #18181b;
+  --color-zinc-800: #27272a;
+  --color-accent-emerald: #10b981;
+  --color-accent-rose: #f43f5e;
+}
+
+@layer base {
+  body {
+    @apply bg-zinc-950 text-zinc-400 antialiased selection:bg-emerald-500/30;
+  }
+}
+
+@layer utilities {
+  .cyber-grid {
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  
+  .cyber-card {
+    @apply bg-zinc-900/50 backdrop-blur-md border border-zinc-800 rounded-none shadow-none;
+  }
+
+  .vault-border {
+    position: relative;
+  }
+  
+  .vault-border::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(135deg, var(--color-zinc-700), transparent);
+    z-index: -1;
+  }
+
+  .scanning-frame {
+    @apply relative border border-zinc-800 p-8 flex flex-col items-center justify-center overflow-hidden;
+  }
+
+  .scanning-line {
+    @apply absolute w-full h-[2px] bg-emerald-500/50 blur-sm top-0 left-0;
+    animation: scan 2s linear infinite;
+  }
+
+  @keyframes scan {
+    0% { top: 0%; }
+    100% { top: 100%; }
+  }
+
+  .typewriter {
+    overflow: hidden;
+    white-space: nowrap;
+    animation: typing 2s steps(40, end);
+  }
+
+  @keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+  }
+
+  .text-contrast {
+    @apply text-white font-semibold;
+  }
+
+  .mono-data {
+    @apply font-mono tracking-tighter;
+  }
+
+  .glow-indigo-sharp {
+     box-shadow: 0 0 15px -3px rgba(99, 102, 241, 0.4);
+  }
+}
+
+/* RainbowKit Overrides for Cyber-Minimalist Theme */
+[data-rk] {
+  --rk-colors-accentColor: #6366f1 !important;
+  --rk-colors-connectButtonBackground: rgba(24, 24, 27, 0.5) !important;
+  --rk-colors-connectButtonText: #ffffff !important;
+  --rk-radii-connectButton: 0px !important;
+  --rk-fonts-body: "Inter", sans-serif !important;
+}
