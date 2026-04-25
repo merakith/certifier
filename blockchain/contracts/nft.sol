@@ -30,6 +30,24 @@ contract CertificateNFT is ERC721 {
         owner = msg.sender; // deployer becomes the owner
     }
 
+    function uint2str(uint256 _i) internal pure returns (string memory str) {
+        if (_i == 0) return "0";
+        uint256 j = _i;
+        uint256 length;
+        while (j != 0) {
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint256 k = length;
+        while (_i != 0) {
+            k--;
+            bstr[k] = bytes1(uint8(48 + (_i % 10)));
+            _i /= 10;
+        }
+        return string(bstr);
+    }
+
     // external, part of ABI, onlyOwner modifier , allow only owner to mint
     function mint(address to, string memory name, string memory course, string memory issuer, string memory image) external onlyOwner {
         uint256 tokenId = nextTokenId++;
@@ -49,7 +67,7 @@ contract CertificateNFT is ERC721 {
     // external, part of ABI, is automatically called by wallets
     // does not change blockchain state
     // overrides oppenzepplins tokenURI()
-    function tokenURI(uint256 tokenId) external view override returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(ownerOf(tokenId) != address(0), "Token does not exist");
 
         Certificate memory cert = certificates[tokenId];
