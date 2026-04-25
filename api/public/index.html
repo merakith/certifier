@@ -17,7 +17,9 @@
 				--border: #d9d6cd;
 			}
 
-			* { box-sizing: border-box; }
+			* {
+				box-sizing: border-box;
+			}
 
 			body {
 				margin: 0;
@@ -32,8 +34,15 @@
 				padding: 24px 16px 56px;
 			}
 
-			h1 { margin: 0 0 6px; font-size: 1.9rem; }
-			p.lead { margin: 0 0 24px; color: var(--muted); }
+			h1 {
+				margin: 0 0 6px;
+				font-size: 1.9rem;
+			}
+
+			p.lead {
+				margin: 0 0 24px;
+				color: var(--muted);
+			}
 
 			.grid {
 				display: grid;
@@ -94,11 +103,22 @@
 				cursor: pointer;
 			}
 
-			button:hover { filter: brightness(1.05); }
+			button:hover {
+				filter: brightness(1.05);
+			}
 
-			.status { min-height: 1.2rem; font-size: 0.9rem; }
-			.status.ok { color: var(--ok); }
-			.status.err { color: var(--danger); }
+			.status {
+				min-height: 1.2rem;
+				font-size: 0.9rem;
+			}
+
+			.status.ok {
+				color: var(--ok);
+			}
+
+			.status.err {
+				color: var(--danger);
+			}
 
 			pre {
 				margin: 0;
@@ -189,7 +209,7 @@
 							<input name="issuer" placeholder="Certifier Academy" required />
 						</label>
 						<label>Image URL
-							<input name="image" placeholder="https://... or ipfs://Qm..." required />
+							<input name="image" placeholder="https://..." required />
 						</label>
 						<button type="submit">Mint</button>
 					</form>
