@@ -13,7 +13,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { registry } from '../lib/registry';
 
 export function PublicVerify() {
   const [file, setFile] = useState<File | null>(null);
@@ -126,8 +125,8 @@ export function PublicVerify() {
           >
             <div className="w-16 h-16 border border-zinc-800 border-t-white animate-spin" />
             <div className="space-y-2">
-              <h2 className="text-sm font-bold text-white uppercase tracking-[0.3em]">PROBING_GLOBAL_LEDGER</h2>
-              <p className="text-zinc-600 font-mono text-[9px] uppercase">SHA-256_FINGERPRINT: {fileHash?.slice(0, 24)}...</p>
+              <h2 className="text-sm font-bold text-white uppercase tracking-[0.3em]">VERIFYING_NODE_CONSENSUS</h2>
+              <p className="text-zinc-600 font-mono text-[9px] uppercase">RESOLVING_MERKLE_PATH: {fileHash?.slice(0, 24)}...</p>
             </div>
           </motion.div>
         )}
@@ -196,9 +195,9 @@ export function PublicVerify() {
                <ShieldAlert className="w-8 h-8 text-rose-500" />
             </div>
             <div className="space-y-4">
-               <h2 className="text-3xl font-bold text-rose-500 uppercase tracking-[0.2em]">STATUS: NOT VALIDATED</h2>
+               <h2 className="text-3xl font-bold text-rose-500 uppercase tracking-[0.2em]">STATUS: HASH_MISMATCH_DETECTED</h2>
                <p className="text-zinc-500 text-[10px] font-mono leading-relaxed max-w-sm mx-auto uppercase tracking-widest">
-                 THE SHA-256 FINGERPRINT OF THIS ASSET DOES NOT MATCH ANY RECORD IN THE BROADCAST CONSENSUS LAYER.
+                 NODE_REJECTION: THE SHA-256 FINGERPRINT OF THIS ASSET DOES NOT MATCH ANY RECORD IN THE BROADCAST CONSENSUS LAYER.
                </p>
                <div className="font-mono text-[10px] p-4 bg-rose-500/5 border border-rose-500/10 text-rose-400 break-all">
                  QUERY_HASH: {fileHash}

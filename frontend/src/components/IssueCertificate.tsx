@@ -15,7 +15,6 @@ import {
 import { cn } from '../lib/utils';
 
 import { useAccount } from 'wagmi';
-import { registry } from '../lib/registry';
 
 export function IssueCertificate() {
   const { isConnected, address } = useAccount();
@@ -207,7 +206,7 @@ export function IssueCertificate() {
                   disabled={!studentName || !walletAddress || !fileHash || isMinting}
                   className="w-full bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-700 font-bold py-4 text-[11px] uppercase tracking-[0.3em] transition-all"
                 >
-                  {isMinting ? 'COMMITTING_TRANSACTION...' : 'EXECUTE_MINT'}
+                  {isMinting ? 'BROADCASTING_TX...' : 'EXECUTE_MINT'}
                 </button>
             </div>
           </motion.div>
@@ -222,9 +221,9 @@ export function IssueCertificate() {
                <CheckCircle2 className="text-emerald-500 w-8 h-8" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-white uppercase tracking-[0.2em]">ASSET_MINTED_SUCCESSFULLY</h2>
+              <h2 className="text-2xl font-bold text-white uppercase tracking-[0.2em]">CONSENSUS_ACHIEVED</h2>
               <p className="text-[11px] font-mono text-zinc-500 max-w-sm mx-auto uppercase">
-                Identity anchored for "{studentName}". Metadata serialized and broadcast to the p2p network.
+                VERIFICATION_COMPLETE: Identity anchored for "{studentName}". Metadata serialized and broadcast to the p2p network.
               </p>
             </div>
             
