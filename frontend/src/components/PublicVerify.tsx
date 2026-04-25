@@ -12,15 +12,16 @@ import {
   Lock,
   Loader2
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
-import { registry } from '../lib/registry';
+import { verifyCertificate } from '../services/api';
 
 export function PublicVerify() {
   const [file, setFile] = useState<File | null>(null);
   const [fileHash, setFileHash] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<'success' | 'failed' | null>(null);
-  const [certData, setCertData] = useState<any>(null);
+  const [metadata, setMetadata] = useState<any>(null);
 
   const calculateHash = async (file: File) => {
     const arrayBuffer = await file.arrayBuffer();
@@ -35,31 +36,45 @@ export function PublicVerify() {
     if (selectedFile) {
       setFile(selectedFile);
       setVerificationResult(null);
-      setCertData(null);
       setIsVerifying(true);
       
       const hash = await calculateHash(selectedFile);
       setFileHash(hash);
 
       try {
-        const response = await fetch('/api/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hash })
-        });
-        const data = await response.json();
-        
-        setIsVerifying(false);
-        if (data.valid) {
-          setCertData(data.data);
+        const data = await verifyCertificate(hash);
+        if (data.success && data.isValid) {
           setVerificationResult('success');
+          setMetadata(data.metadata);
+          toast.success('Integrity verified', {
+            style: {
+              background: '#18181b',
+              color: '#fff',
+              border: '1px solid #27272a',
+              fontSize: '10px',
+              fontFamily: 'JetBrains Mono, monospace',
+              borderRadius: '0px',
+            },
+          });
         } else {
           setVerificationResult('failed');
         }
       } catch (error) {
-        console.error("Verification error:", error);
-        setIsVerifying(false);
+        console.error('Verification Error:', error);
         setVerificationResult('failed');
+        const message = error instanceof Error ? error.message : 'Connection error';
+        toast.error(message, {
+          style: {
+            background: '#18181b',
+            color: '#fff',
+            border: '1px solid #27272a',
+            fontSize: '10px',
+            fontFamily: 'JetBrains Mono, monospace',
+            borderRadius: '0px',
+          },
+        });
+      } finally {
+        setIsVerifying(false);
       }
     }
   }, []);
@@ -132,7 +147,7 @@ export function PublicVerify() {
           </motion.div>
         )}
 
-        {verificationResult === 'success' && certData && (
+        {verificationResult === 'success' && (
           <motion.div
             key="success"
             initial={{ opacity: 0, y: 10 }}
@@ -150,26 +165,26 @@ export function PublicVerify() {
                   </div>
                   <div className="space-y-1 text-center md:text-left">
                      <h2 className="text-2xl font-bold text-white uppercase tracking-widest font-mono">STATUS: VALIDATED</h2>
-                     <p className="text-emerald-500 font-mono text-[9px] font-bold uppercase tracking-[0.2em]">IDENTIFIED_ENTITY: {certData.studentName}</p>
+                     <p className="text-emerald-500 font-mono text-[9px] font-bold uppercase tracking-[0.2em]">RECIPIENT: {metadata?.recipient}</p>
                   </div>
                </div>
 
                <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-px bg-zinc-800">
                   <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">RECIPIENT_WALLET</p>
-                     <p className="text-xs text-white font-mono truncate">{certData.recipientWallet}</p>
+                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">ISSUER</p>
+                     <p className="text-xs text-white font-mono truncate">{metadata?.issuer}</p>
                   </div>
                   <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">CHAIN_ANCHOR_HASH</p>
+                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">ASSET_HASH</p>
                      <p className="text-xs text-emerald-500 font-mono truncate">{fileHash}</p>
                   </div>
                   <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">BLOCK_HEIGHT</p>
-                     <p className="text-xs text-white font-mono">{certData.blockNumber}</p>
+                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">CHAIN_HEIGHT</p>
+                     <p className="text-xs text-white font-mono truncate">{metadata?.block}</p>
                   </div>
                   <div className="bg-zinc-950 p-6 space-y-1">
                      <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">TIMESTAMP</p>
-                     <p className="text-xs text-white font-mono uppercase">{new Date(certData.timestamp).toLocaleDateString()}</p>
+                     <p className="text-xs text-white font-mono truncate">{metadata?.date}</p>
                   </div>
                </div>
 
@@ -192,17 +207,14 @@ export function PublicVerify() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-zinc-900 border border-rose-500/30 p-20 flex flex-col items-center text-center gap-10"
           >
-            <div className="w-16 h-16 border-2 border-rose-500 flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.2)]">
+            <div className="w-16 h-16 border-2 border-rose-500 flex items-center justify-center">
                <ShieldAlert className="w-8 h-8 text-rose-500" />
             </div>
             <div className="space-y-4">
-               <h2 className="text-3xl font-bold text-rose-500 uppercase tracking-[0.2em]">STATUS: NOT VALIDATED</h2>
-               <p className="text-zinc-500 text-[10px] font-mono leading-relaxed max-w-sm mx-auto uppercase tracking-widest">
-                 THE SHA-256 FINGERPRINT OF THIS ASSET DOES NOT MATCH ANY RECORD IN THE BROADCAST CONSENSUS LAYER.
+               <h2 className="text-xl font-bold text-white uppercase tracking-widest underline decoration-rose-500/50 underline-offset-8">INTEGRITY_COMPROMISED</h2>
+               <p className="text-zinc-500 text-[10px] font-mono leading-relaxed max-w-xs mx-auto uppercase">
+                 The provided document does not exist within the primary or secondary validation nodes. Origin: Unknown.
                </p>
-               <div className="font-mono text-[10px] p-4 bg-rose-500/5 border border-rose-500/10 text-rose-400 break-all">
-                 QUERY_HASH: {fileHash}
-               </div>
             </div>
             <button onClick={reset} className="bg-white text-zinc-950 px-12 py-4 font-bold text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all">
               RETRY_AUTHENTICATION

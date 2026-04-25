@@ -1,50 +1,63 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck, Search, Cpu, FileCheck2, AlertCircle, ExternalLink, QrCode } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
-
-import { registry } from '../lib/registry';
+import { verifyCertificate } from '../services/api';
 
 export function VerifyCertificate() {
   const [hash, setHash] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState(false);
 
   const handleVerify = async () => {
     if (!hash) return;
     setIsVerifying(true);
     setResult(null);
-    setError(false);
     
     try {
-      const normalizedHash = hash.startsWith('0x') ? hash : '0x' + hash;
-      const response = await fetch('/api/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hash: normalizedHash })
-      });
-      const data = await response.json();
-      
-      if (data.valid) {
-        setResult(data.data);
+      const data = await verifyCertificate(hash);
+      if (data.success && data.isValid) {
+        setResult(data.metadata);
+        toast.success('Asset identity confirmed', {
+          style: {
+            background: '#18181b',
+            color: '#fff',
+            border: '1px solid #27272a',
+            fontSize: '10px',
+            fontFamily: 'JetBrains Mono, monospace',
+            borderRadius: '0px',
+          },
+        });
       } else {
-        setError(true);
+        toast.error(data.error || 'Invalid certificate hash', {
+          style: {
+            background: '#18181b',
+            color: '#fff',
+            border: '1px solid #27272a',
+            fontSize: '10px',
+            fontFamily: 'JetBrains Mono, monospace',
+            borderRadius: '0px',
+          },
+        });
       }
     } catch (error) {
-      console.error("Verification search failed:", error);
-      setError(true);
+      console.error('Verification Error:', error);
+      const message = error instanceof Error ? error.message : 'Connection failed';
+      toast.error(message, {
+        style: {
+          background: '#18181b',
+          color: '#fff',
+          border: '1px solid #27272a',
+          fontSize: '10px',
+          fontFamily: 'JetBrains Mono, monospace',
+          borderRadius: '0px',
+        },
+      });
     } finally {
       setIsVerifying(false);
     }
   };
-
-  const reset = () => {
-    setHash('');
-    setResult(null);
-    setError(false);
-  };
-
 
   return (
     <div className="space-y-12">
@@ -100,17 +113,17 @@ export function VerifyCertificate() {
             <div className="md:col-span-2 p-8 bg-zinc-900 border-r border-zinc-800">
                <div className="flex items-center gap-3 mb-8">
                   <div className="w-2 h-2 bg-emerald-500" />
-                  <h2 className="text-xl font-bold text-white uppercase tracking-[0.2em]">STATUS: VALIDATED</h2>
+                  <h2 className="text-sm font-bold text-white uppercase tracking-[0.2em]">ASSET_IDENTITY_CONFIRMED</h2>
                </div>
 
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-12 gap-x-8 font-mono">
                   {[
-                    { label: 'IDENTIFIED_ENTITY', value: result.studentName },
-                    { label: 'RECIPIENT_WALLET', value: result.recipientWallet },
-                    { label: 'ISSUER_SOURCE', value: result.issuer },
-                    { label: 'BLOCK_TIMESTAMP', value: new Date(result.timestamp).toLocaleDateString() },
-                    { label: 'CHAIN_HEIGHT', value: result.blockNumber },
-                    { label: 'ASSET_SIGNATURE', value: hash.slice(0, 16) + '...' },
+                    { label: 'ISSUER_ID', value: result.issuer },
+                    { label: 'CLASSIFICATION', value: result.type },
+                    { label: 'LEGAL_RECIPIENT', value: result.recipient },
+                    { label: 'BLOCK_TIMESTAMP', value: result.date },
+                    { label: 'CHAIN_HEIGHT', value: result.block },
+                    { label: 'ASSET_SIGNATURE', value: result.hash.slice(0, 16) + '...' },
                   ].map((item, i) => (
                     <div key={i} className="space-y-1">
                       <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-widest">{item.label}</p>
@@ -125,31 +138,10 @@ export function VerifyCertificate() {
                <div className="p-4 bg-white">
                  <QrCode className="w-32 h-32 text-zinc-950" />
                </div>
-               <button onClick={reset} className="w-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-[10px] font-bold font-mono py-3 uppercase tracking-widest hover:border-white transition-colors">
-                 [RESET_QUERY]
+               <button className="w-full bg-zinc-900 border border-zinc-800 text-white text-[10px] font-bold font-mono py-3 uppercase tracking-widest hover:border-white transition-colors">
+                 GENERATE_PUBLIC_URL_v1.2
                </button>
             </div>
-          </motion.div>
-        )}
-
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-zinc-900 border border-rose-500/30 p-20 flex flex-col items-center text-center gap-8 shadow-[0_0_50px_-12px_rgba(244,63,94,0.1)]"
-          >
-            <div className="w-16 h-16 border-2 border-rose-500 flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.2)]">
-               <AlertCircle className="text-rose-500 w-8 h-8" />
-            </div>
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold text-rose-500 uppercase tracking-[0.2em]">STATUS: NOT VALIDATED</h2>
-              <p className="text-[11px] font-mono text-zinc-500 max-w-sm mx-auto uppercase tracking-widest leading-relaxed">
-                THE CRYPTOGRAPHIC HASH ENTERED HAS NO MATCHING RECORD IN THE ANCHORED REGISTRY. DATA INTEGRITY CANNOT BE CONFIRMED.
-              </p>
-            </div>
-            <button onClick={reset} className="bg-white text-zinc-950 px-12 py-3 font-bold text-[11px] uppercase tracking-[0.3em] hover:bg-zinc-200 transition-all">
-              PURGE_AND_RETRY
-            </button>
           </motion.div>
         )}
       </AnimatePresence>

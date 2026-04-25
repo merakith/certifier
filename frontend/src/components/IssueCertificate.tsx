@@ -10,22 +10,21 @@ import {
   CheckCircle2, 
   ChevronRight,
   Loader2,
-  Trash2
+  Trash2,
+  ExternalLink
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
-
-import { useAccount } from 'wagmi';
-import { registry } from '../lib/registry';
+import { issueCertificate, MintResponse } from '../services/api';
 
 export function IssueCertificate() {
-  const { isConnected, address } = useAccount();
   const [studentName, setStudentName] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [fileHash, setFileHash] = useState<string | null>(null);
   const [isMinting, setIsMinting] = useState(false);
   const [minted, setMinted] = useState(false);
-  const [txDetails, setTxDetails] = useState<any>(null);
+  const [txDetails, setTxDetails] = useState<{ hash: string; tokenId: string } | null>(null);
 
   const calculateHash = async (file: File) => {
     const arrayBuffer = await file.arrayBuffer();
@@ -54,37 +53,50 @@ export function IssueCertificate() {
   } as any);
 
   const handleMint = async () => {
-    if (!studentName || !walletAddress || !fileHash || !isConnected) return;
+    if (!studentName || !walletAddress || !fileHash) return;
     setIsMinting(true);
     
     try {
-      const response = await fetch('/api/mint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: walletAddress,
-          name: studentName,
-          course: 'CERTIFIED_BLOCKCHAIN_CREDENTIAL',
-          issuer: 'V.PROOF_CONSENSUS_ENGINE',
-          image: fileHash // We store the hash in the image field as the unique identifier
-        })
-      });
+      const data = await issueCertificate(studentName, walletAddress, fileHash);
 
-      const data = await response.json();
-      
-      if (data.success) {
-        setTxDetails({
-          blockNumber: data.blockNumber,
-          hash: data.hash,
-          timestamp: new Date().toISOString()
-        });
+      if (data.success && data.txHash) {
+        setTxDetails({ hash: data.txHash, tokenId: data.tokenId || 'N/A' });
         setMinted(true);
+        toast.success('Certificate anchored to blockchain', {
+          style: {
+            background: '#18181b', // zinc-900
+            color: '#fff',
+            border: '1px solid #27272a', // zinc-800
+            fontSize: '10px',
+            fontFamily: 'JetBrains Mono, monospace',
+            borderRadius: '0px',
+          },
+        });
       } else {
-        console.error("Minting failed at contract level:", data.error);
-        alert("TRANSACTION_REJECTED: Check backend logs and gas.");
+        toast.error(`Minting failed: ${data.error || 'Unknown error'}`, {
+          style: {
+            background: '#18181b', // zinc-900
+            color: '#fff',
+            border: '1px solid #27272a', // zinc-800
+            fontSize: '10px',
+            fontFamily: 'JetBrains Mono, monospace',
+            borderRadius: '0px',
+          },
+        });
       }
     } catch (error) {
-      console.error("Network error during minting:", error);
+      console.error('API Error:', error);
+      const message = error instanceof Error ? error.message : 'Unknown connection error';
+      toast.error(message, {
+        style: {
+          background: '#18181b', // zinc-900
+          color: '#fff',
+          border: '1px solid #27272a', // zinc-800
+          fontSize: '10px',
+          fontFamily: 'JetBrains Mono, monospace',
+          borderRadius: '0px',
+        },
+      });
     } finally {
       setIsMinting(false);
     }
@@ -96,6 +108,7 @@ export function IssueCertificate() {
     setFile(null);
     setFileHash(null);
     setMinted(false);
+    setTxDetails(null);
   };
 
   return (
@@ -205,9 +218,14 @@ export function IssueCertificate() {
                 <button 
                   onClick={handleMint}
                   disabled={!studentName || !walletAddress || !fileHash || isMinting}
-                  className="w-full bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-700 font-bold py-4 text-[11px] uppercase tracking-[0.3em] transition-all"
+                  className="w-full bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-700 font-bold py-4 text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-2"
                 >
-                  {isMinting ? 'COMMITTING_TRANSACTION...' : 'EXECUTE_MINT'}
+                  {isMinting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+                      PROCESSING_ON_BLOCKCHAIN...
+                    </>
+                  ) : 'EXECUTE_MINT'}
                 </button>
             </div>
           </motion.div>
@@ -231,15 +249,15 @@ export function IssueCertificate() {
             <div className="w-full max-w-sm bg-zinc-950 border border-zinc-800 p-6 font-mono text-[9px] text-zinc-600 space-y-2 text-left uppercase">
                <div className="flex justify-between border-b border-zinc-900 pb-1">
                  <span>TX_HASH:</span>
-                 <span className="text-emerald-500">{fileHash?.slice(0, 10)}...</span>
+                 <span className="text-emerald-500">{txDetails?.hash.slice(0, 10)}...{txDetails?.hash.slice(-8)}</span>
                </div>
                <div className="flex justify-between border-b border-zinc-900 pb-1">
-                 <span>BLOCK_HEIGHT:</span>
-                 <span className="text-white">#{txDetails?.blockNumber}</span>
+                 <span>TOKEN_ID:</span>
+                 <span className="text-white">#{txDetails?.tokenId}</span>
                </div>
                <div className="flex justify-between border-b border-zinc-900 pb-1">
-                 <span>CONSENSUS:</span>
-                 <span className="text-white">COMMITTED</span>
+                 <span>NODE_CONSENSUS:</span>
+                 <span className="text-white">VERIFIED</span>
                </div>
             </div>
 
@@ -247,9 +265,14 @@ export function IssueCertificate() {
               <button onClick={resetForm} className="flex-1 bg-white text-zinc-950 font-bold py-3 text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all">
                  ISSUE_NEXT
               </button>
-              <button className="flex-1 bg-zinc-950 border border-zinc-800 text-white font-bold py-3 text-[10px] uppercase tracking-widest hover:border-white transition-all">
-                 EXPLORER
-              </button>
+              <a 
+                href={`https://sepolia.etherscan.io/tx/${txDetails?.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 bg-zinc-950 border border-zinc-800 text-white font-bold py-3 text-[10px] uppercase tracking-widest hover:border-white transition-all text-center flex items-center justify-center gap-2"
+              >
+                 EXPLORER <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           </motion.div>
         )}

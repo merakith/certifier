@@ -20,9 +20,9 @@ import {
 import { ReactNode } from 'react';
 
 const config = getDefaultConfig({
-  appName: 'V.PROOF_CONSENSUS_ENGINE',
-  projectId: 'a0b9a8e...3b5c', // We use a dummy ID here. Users should replace this with their own from cloud.walletconnect.com
-  chains: [mainnet, sepolia, polygon, base],
+  appName: 'Blockchain Certificate Verifier',
+  projectId: 'YOUR_PROJECT_ID', // In production, this would be an env var
+  chains: [mainnet, polygon, optimism, arbitrum, base, sepolia],
   ssr: true, 
 });
 
