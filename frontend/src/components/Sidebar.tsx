@@ -18,7 +18,7 @@ export function Sidebar() {
         <div className="w-6 h-6 bg-white rounded-none flex items-center justify-center">
           <ShieldCheck className="text-zinc-950 w-4 h-4" />
         </div>
-        <span className="font-bold text-sm tracking-[0.2em] text-white">V.PROOF</span>
+        <span className="font-bold text-sm tracking-[0.2em] text-white">Certifier</span>
       </div>
 
       <nav className="flex-1 px-4 py-8 space-y-2">

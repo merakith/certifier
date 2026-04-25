@@ -106,6 +106,35 @@ app.post("/api/verify", async (req, res) => {
   }
 });
 
+app.get("/api/stats", async (req, res) => {
+  try {
+    const { contract, wallet } = getBlockchain();
+    const provider = wallet.provider;
+    if (!provider) throw new Error("Provider not connected");
+
+    const [blockNumber, nextTokenId] = await Promise.all([
+      provider.getBlockNumber(),
+      contract.nextTokenId()
+    ]);
+
+    res.json({
+      success: true,
+      totalVerified: nextTokenId.toString(),
+      blockHeight: blockNumber.toString(),
+      network: "HARDHAT_LOCAL"
+    });
+  } catch (error: any) {
+    console.error("Stats fetch failed:", error);
+    // Return fallback data if blockchain is not configured/reachable
+    res.json({
+      success: false,
+      totalVerified: "0",
+      blockHeight: "0",
+      network: "OFFLINE"
+    });
+  }
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

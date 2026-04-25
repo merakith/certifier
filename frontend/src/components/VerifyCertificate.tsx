@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck, Search, Cpu, FileCheck2, AlertCircle, ExternalLink, QrCode } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-import { registry } from '../lib/registry';
-
 export function VerifyCertificate() {
   const [hash, setHash] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -85,8 +83,8 @@ export function VerifyCertificate() {
           >
             <div className="w-12 h-12 border-2 border-zinc-800 border-t-white animate-spin" />
             <div className="text-center space-y-1">
-              <h3 className="text-sm font-bold text-white uppercase tracking-[0.2em]">NODE_CONSENSUS_SYNCING</h3>
-              <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Querying Layer-1 Mainnet Validators...</p>
+              <h3 className="text-sm font-bold text-white uppercase tracking-[0.2em]">VERIFYING_NODE_CONSENSUS</h3>
+              <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">RESOLVING_MERKLE_PATH: {hash.slice(0, 24)}...</p>
             </div>
           </motion.div>
         )}
@@ -100,7 +98,7 @@ export function VerifyCertificate() {
             <div className="md:col-span-2 p-8 bg-zinc-900 border-r border-zinc-800">
                <div className="flex items-center gap-3 mb-8">
                   <div className="w-2 h-2 bg-emerald-500" />
-                  <h2 className="text-xl font-bold text-white uppercase tracking-[0.2em]">STATUS: VALIDATED</h2>
+                  <h2 className="text-xl font-bold text-white uppercase tracking-[0.2em]">STATUS: HASH_MATCHED</h2>
                </div>
 
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-12 gap-x-8 font-mono">
@@ -142,9 +140,9 @@ export function VerifyCertificate() {
                <AlertCircle className="text-rose-500 w-8 h-8" />
             </div>
             <div className="space-y-4">
-              <h2 className="text-3xl font-bold text-rose-500 uppercase tracking-[0.2em]">STATUS: NOT VALIDATED</h2>
+              <h2 className="text-3xl font-bold text-rose-500 uppercase tracking-[0.2em]">STATUS: NODE_REJECTION</h2>
               <p className="text-[11px] font-mono text-zinc-500 max-w-sm mx-auto uppercase tracking-widest leading-relaxed">
-                THE CRYPTOGRAPHIC HASH ENTERED HAS NO MATCHING RECORD IN THE ANCHORED REGISTRY. DATA INTEGRITY CANNOT BE CONFIRMED.
+                HASH_MISMATCH_DETECTED: THE CRYPTOGRAPHIC HASH ENTERED HAS NO MATCHING RECORD IN THE ANCHORED REGISTRY.
               </p>
             </div>
             <button onClick={reset} className="bg-white text-zinc-950 px-12 py-3 font-bold text-[11px] uppercase tracking-[0.3em] hover:bg-zinc-200 transition-all">
