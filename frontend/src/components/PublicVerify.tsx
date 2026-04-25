@@ -2,25 +2,17 @@ import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  FileSearch, 
   Upload, 
   ShieldCheck, 
   ShieldAlert, 
-  RefreshCcw,
-  FileText,
-  ExternalLink,
-  Lock,
-  Loader2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const VERIFY_STATES = [
   'INITIALIZING_PROTOCOL',
-  'ESTABLISHING_SECURE_CHANNEL',
   'SEARCHING_BLOCK_HISTORY',
   'VERIFYING_NODE_CONSENSUS',
   'SYNCING_CHAIN_DATA',
-  'RESOLVING_MERKLE_PATH'
 ];
 
 export function PublicVerify() {
@@ -95,7 +87,14 @@ export function PublicVerify() {
     setFile(null);
     setFileHash(null);
     setVerificationResult(null);
+    setCertData(null);
   };
+
+  const explorerHref = certData?.txHash
+    ? `https://sepolia.etherscan.io/tx/${certData.txHash}`
+    : certData?.transactionHash
+      ? `https://sepolia.etherscan.io/tx/${certData.transactionHash}`
+      : null;
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 space-y-16">
@@ -210,9 +209,17 @@ export function PublicVerify() {
                </div>
 
                <div className="mt-8 flex gap-4">
-                  <button className="flex-1 bg-white text-zinc-950 font-bold py-4 text-[10px] uppercase tracking-[0.3em] hover:bg-zinc-200 transition-all">
+                  <a
+                    href={explorerHref || '#'}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cn(
+                      'flex-1 bg-white text-zinc-950 font-bold py-4 text-[10px] uppercase tracking-[0.3em] transition-all text-center',
+                      explorerHref ? 'hover:bg-zinc-200' : 'pointer-events-none opacity-50'
+                    )}
+                  >
                     BLOCK_EXPLORER
-                  </button>
+                  </a>
                   <button onClick={reset} className="px-8 bg-zinc-950 border border-zinc-800 text-zinc-400 font-bold py-4 text-[10px] uppercase tracking-widest hover:border-white hover:text-white transition-all">
                     [RESET_GATEWAY]
                   </button>

@@ -1,4 +1,4 @@
-import { LayoutDashboard, History, Settings, LogOut, Trash2, Hexagon, ShieldCheck, FileSearch, X } from 'lucide-react';
+import { LayoutDashboard, LogOut, Trash2, Hexagon, ShieldCheck, FileSearch, X } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -8,12 +8,10 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Control Center', path: '/' },
-  { icon: ShieldCheck, label: 'Issue Credential', path: '/issue' },
-  { icon: FileSearch, label: 'Verify Entity', path: '/verify' },
-  { icon: Trash2, label: 'Revoke Anchor', path: '/revoke' },
-  { icon: History, label: 'Audit Log', path: '/history' },
-  { icon: Settings, label: 'System Settings', path: '/settings' },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: ShieldCheck, label: 'Issue Certificate', path: '/issue' },
+  { icon: FileSearch, label: 'Verify Certificate', path: '/verify' },
+  { icon: Trash2, label: 'Revoke Certificate', path: '/revoke' },
 ];
 
 export function Sidebar({ onClose }: SidebarProps) {
@@ -49,12 +47,15 @@ export function Sidebar({ onClose }: SidebarProps) {
             Certifier
           </span>
         </div>
-        <button 
-          onClick={onClose}
-          className="p-2 hover:bg-zinc-800/50 rounded-full text-zinc-500 hover:text-white transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-zinc-800/50 rounded-full text-zinc-500 hover:text-white transition-colors lg:hidden"
+            aria-label="Close sidebar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 px-4 py-8 space-y-2">
@@ -71,10 +72,8 @@ export function Sidebar({ onClose }: SidebarProps) {
             )}
           >
             <motion.div
-              whileHover={{ 
-                y: [0, -6, 0, -3, 0],
-                transition: { duration: 0.5, ease: "easeInOut" }
-              }}
+              whileHover={{ scale: 1.08 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
             >
               <item.icon 
                 className="w-4 h-4" 
@@ -91,10 +90,8 @@ export function Sidebar({ onClose }: SidebarProps) {
       <div className="p-4 border-t border-zinc-800">
         <button className="flex items-center gap-3 px-4 py-2 text-zinc-600 hover:text-rose-500 transition-colors w-full group text-[10px] font-bold uppercase tracking-widest">
           <motion.div
-            whileHover={{ 
-              y: [0, -6, 0, -3, 0],
-              transition: { duration: 0.5, ease: "easeInOut" }
-            }}
+            whileHover={{ scale: 1.08 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
           >
             <LogOut 
               className="w-4 h-4" 
