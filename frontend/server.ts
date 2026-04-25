@@ -8,24 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Mock Database for development
-const certificates = [
-  {
-    studentName: 'ALEX RIVERA',
-    recipientAddress: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
-    fileHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    txHash: '0x4F2d...A92D',
-    tokenId: '10429'
-  },
-  {
-    studentName: 'SARAH CHEN',
-    recipientAddress: '0x1234567890abcdef1234567890abcdef12345678',
-    fileHash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
-    txHash: '0x9B1a...E3F1',
-    tokenId: '10430'
-  }
-];
+const certificates:any[] = [];
 
 async function startServer() {
   const app = express();
