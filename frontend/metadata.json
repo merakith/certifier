@@ -1,9 +1,0 @@
-{
-  "name": "Remix: Blockchain Certificate Verifier",
-  "description": "A high-precision industrial-themed platform for verifying academic and professional certificates on-chain.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "Web3",
-    "Blockchain Verification"
-  ]
-}
