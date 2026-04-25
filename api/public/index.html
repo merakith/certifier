@@ -24,7 +24,11 @@
 			body {
 				margin: 0;
 				font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-				background: radial-gradient(circle at top right, #e9f5f6 0%, var(--bg) 45%);
+				background: radial-gradient(
+					circle at top right,
+					#e9f5f6 0%,
+					var(--bg) 45%
+				);
 				color: var(--ink);
 			}
 
@@ -48,6 +52,10 @@
 				display: grid;
 				grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 				gap: 16px;
+			}
+
+			.grid-wide {
+				grid-column: 1 / -1;
 			}
 
 			.card {
@@ -92,7 +100,11 @@
 				padding: 10px 14px;
 				border: 0;
 				border-radius: 9px;
-				background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+				background: linear-gradient(
+					135deg,
+					var(--accent) 0%,
+					var(--accent-2) 100%
+				);
 				color: white;
 				font-size: 0.95rem;
 				font-weight: 600;
@@ -131,25 +143,41 @@
 	<body>
 		<main>
 			<h1>Certifier API Test Utility</h1>
-			<p class="lead">Use these forms to test POST /api/mint, GET /api/verify/:tokenId, and GET /api/revoke/:tokenId on your local server.</p>
+			<p class="lead">
+				Use these forms to test POST /api/mint, GET /api/verify/:tokenId, and
+				GET /api/revoke/:tokenId on your local server.
+			</p>
 
 			<div class="grid">
 				<section class="card">
 					<h2>Mint Certificate</h2>
 					<form id="mintForm">
-						<label>Recipient Address (to)
+						<label
+							>Recipient Address (to)
 							<input name="to" placeholder="0x..." required />
 						</label>
-						<label>Student Name
+						<label
+							>Student Name
 							<input name="name" placeholder="Jane Doe" required />
 						</label>
-						<label>Course
-							<input name="course" placeholder="Blockchain 101" required />
+						<label
+							>Course
+							<input
+								name="course"
+								placeholder="Blockchain 101"
+								required
+							/>
 						</label>
-						<label>Issuer
-							<input name="issuer" placeholder="Certifier Academy" required />
+						<label
+							>Issuer
+							<input
+								name="issuer"
+								placeholder="Certifier Academy"
+								required
+							/>
 						</label>
-						<label>Image URL
+						<label
+							>Image URL
 							<input name="image" placeholder="https://..." required />
 						</label>
 						<button type="submit">Mint</button>
@@ -161,8 +189,16 @@
 				<section class="card">
 					<h2>Verify Certificate</h2>
 					<form id="verifyForm">
-						<label>Token ID
-							<input name="tokenId" type="number" min="0" step="1" placeholder="0" required />
+						<label
+							>Token ID
+							<input
+								name="tokenId"
+								type="number"
+								min="0"
+								step="1"
+								placeholder="0"
+								required
+							/>
 						</label>
 						<button type="submit">Verify</button>
 					</form>
@@ -173,18 +209,47 @@
 				<section class="card">
 					<h2>Revoke Certificate</h2>
 					<form id="revokeForm">
-						<label>Token ID
-							<input name="tokenId" type="number" min="0" step="1" placeholder="0" required />
+						<label
+							>Token ID
+							<input
+								name="tokenId"
+								type="number"
+								min="0"
+								step="1"
+								placeholder="0"
+								required
+							/>
 						</label>
 						<button type="submit">Revoke</button>
 					</form>
 					<p id="revokeStatus" class="status"></p>
 					<pre id="revokeOutput">No request yet.</pre>
 				</section>
+
+				<section class="card grid-wide">
+					<h2>Bulk Mint CSV Upload</h2>
+					<form id="bulkMintForm">
+						<label>
+							CSV File
+							<input name="csvFile" type="file" accept=".csv,text/csv" required />
+						</label>
+						<p class="status" style="margin: 0; color: var(--muted)">
+							CSV must include columns: to, name, course, issuer, image.
+							Rows are processed sequentially up to 500 at a time.
+						</p>
+						<button type="submit">Upload and Mint Batch</button>
+					</form>
+					<p id="bulkMintStatus" class="status"></p>
+					<pre id="bulkMintOutput">No request yet.</pre>
+				</section>
 			</div>
 		</main>
 
 		<script>
+			const ngrokBypassHeader = {
+				"ngrok-skip-browser-warning": "true",
+			};
+
 			const setStatus = (el, ok, text) => {
 				el.textContent = text;
 				el.className = `status ${ok ? "ok" : "err"}`;
@@ -212,12 +277,21 @@
 				try {
 					const response = await fetch("/api/mint", {
 						method: "POST",
-						headers: { "Content-Type": "application/json" },
+						headers: {
+							"Content-Type": "application/json",
+							...ngrokBypassHeader,
+						},
 						body: JSON.stringify(payload),
 					});
 					const data = await response.json();
 					mintOutput.textContent = stringify(data);
-					setStatus(mintStatus, response.ok, response.ok ? "Mint request succeeded." : "Mint request failed.");
+					setStatus(
+						mintStatus,
+						response.ok,
+						response.ok
+							? "Mint request succeeded."
+							: "Mint request failed.",
+					);
 				} catch (error) {
 					setStatus(mintStatus, false, "Network error while minting.");
 					mintOutput.textContent = stringify({ error: String(error) });
@@ -236,10 +310,19 @@
 				const tokenId = String(formData.get("tokenId") || "").trim();
 
 				try {
-					const response = await fetch(`/api/verify/${encodeURIComponent(tokenId)}`);
+					const response = await fetch(
+						`/api/verify/${encodeURIComponent(tokenId)}`,
+						{ headers: ngrokBypassHeader },
+					);
 					const data = await response.json();
 					verifyOutput.textContent = stringify(data);
-					setStatus(verifyStatus, response.ok, response.ok ? "Verify request succeeded." : "Verify request failed.");
+					setStatus(
+						verifyStatus,
+						response.ok,
+						response.ok
+							? "Verify request succeeded."
+							: "Verify request failed.",
+					);
 				} catch (error) {
 					setStatus(verifyStatus, false, "Network error while verifying.");
 					verifyOutput.textContent = stringify({ error: String(error) });
@@ -249,6 +332,9 @@
 			const revokeForm = document.getElementById("revokeForm");
 			const revokeStatus = document.getElementById("revokeStatus");
 			const revokeOutput = document.getElementById("revokeOutput");
+			const bulkMintForm = document.getElementById("bulkMintForm");
+			const bulkMintStatus = document.getElementById("bulkMintStatus");
+			const bulkMintOutput = document.getElementById("bulkMintOutput");
 
 			revokeForm.addEventListener("submit", async (event) => {
 				event.preventDefault();
@@ -258,13 +344,59 @@
 				const tokenId = String(formData.get("tokenId") || "").trim();
 
 				try {
-					const response = await fetch(`/api/revoke/${encodeURIComponent(tokenId)}`);
+					const response = await fetch(
+						`/api/revoke/${encodeURIComponent(tokenId)}`,
+						{ headers: ngrokBypassHeader },
+					);
 					const data = await response.json();
 					revokeOutput.textContent = stringify(data);
-					setStatus(revokeStatus, response.ok, response.ok ? "Revoke request succeeded." : "Revoke request failed.");
+					setStatus(
+						revokeStatus,
+						response.ok,
+						response.ok
+							? "Revoke request succeeded."
+							: "Revoke request failed.",
+					);
 				} catch (error) {
 					setStatus(revokeStatus, false, "Network error while revoking.");
 					revokeOutput.textContent = stringify({ error: String(error) });
+				}
+			});
+
+			bulkMintForm.addEventListener("submit", async (event) => {
+				event.preventDefault();
+				setStatus(bulkMintStatus, true, "Uploading CSV and starting batch mint...");
+
+				const formData = new FormData(bulkMintForm);
+				const file = formData.get("csvFile");
+
+				if (!(file instanceof File) || file.size === 0) {
+					setStatus(bulkMintStatus, false, "Please choose a CSV file.");
+					return;
+				}
+
+				try {
+					const csvText = await file.text();
+					const response = await fetch("/api/bulk-mint", {
+						method: "POST",
+						headers: {
+							"Content-Type": "text/csv",
+							...ngrokBypassHeader,
+						},
+						body: csvText,
+					});
+					const data = await response.json();
+					bulkMintOutput.textContent = stringify(data);
+					setStatus(
+						bulkMintStatus,
+						response.ok,
+						response.ok
+							? "Bulk mint batch completed."
+							: "Bulk mint batch failed.",
+					);
+				} catch (error) {
+					setStatus(bulkMintStatus, false, "Network error while bulk minting.");
+					bulkMintOutput.textContent = stringify({ error: String(error) });
 				}
 			});
 		</script>
