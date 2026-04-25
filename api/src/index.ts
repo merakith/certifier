@@ -250,7 +250,12 @@ const getMintContract = async () => {
 	const signer = new Wallet(privateKey, provider);
 	const contract = new Contract(config.contractAddress, CERTIFICATE_NFT_ABI, signer);
 
-	return { config, contract };
+	return { config, contract, provider, signer };
+};
+
+const getNextMintNonce = async (provider: JsonRpcProvider, signer: Wallet): Promise<number> => {
+	const address = await signer.getAddress();
+	return provider.getTransactionCount(address, "pending");
 };
 
 app.use(express.json());
@@ -340,6 +345,7 @@ app.post("/api/bulk-mint", express.text({ type: ["text/csv", "text/plain"], limi
 	}
 
 	const results: Array<BulkIssueCertificateResult> = [];
+	let nextNonce = await getNextMintNonce(mintContext.provider, mintContext.signer);
 
 	for (let index = 0; index < rows.length; index += 1) {
 		const row = rows[index];
@@ -366,7 +372,10 @@ app.post("/api/bulk-mint", express.text({ type: ["text/csv", "text/plain"], limi
 		}
 
 		try {
-			const tx = await mintContext.contract.mint(row.to, row.name, row.course, row.issuer, row.image);
+			const tx = await mintContext.contract.mint(row.to, row.name, row.course, row.issuer, row.image, {
+				nonce: nextNonce,
+			});
+			nextNonce += 1;
 			const receipt = await tx.wait();
 			const tokenId = extractMintTokenIdFromReceipt(receipt, mintContext.contract, mintContext.config.contractAddress);
 
