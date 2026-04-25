@@ -1,8 +1,11 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
 import { Contract, JsonRpcProvider, Wallet } from "ethers";
 
 const app = express();
+app.set('trust proxy', 1);
+app.use(cors());
 const port = Number(process.env.PORT) || 800;
 
 type IssueCertificateRequest = {
