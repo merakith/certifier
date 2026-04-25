@@ -131,7 +131,7 @@
 	<body>
 		<main>
 			<h1>Certifier API Test Utility</h1>
-			<p class="lead">Use these forms to test POST /api/mint and GET /api/verify/:tokenId on your local server.</p>
+			<p class="lead">Use these forms to test POST /api/mint, GET /api/verify/:tokenId, and GET /api/revoke/:tokenId on your local server.</p>
 
 			<div class="grid">
 				<section class="card">
@@ -168,6 +168,18 @@
 					</form>
 					<p id="verifyStatus" class="status"></p>
 					<pre id="verifyOutput">No request yet.</pre>
+				</section>
+
+				<section class="card">
+					<h2>Revoke Certificate</h2>
+					<form id="revokeForm">
+						<label>Token ID
+							<input name="tokenId" type="number" min="0" step="1" placeholder="0" required />
+						</label>
+						<button type="submit">Revoke</button>
+					</form>
+					<p id="revokeStatus" class="status"></p>
+					<pre id="revokeOutput">No request yet.</pre>
 				</section>
 			</div>
 		</main>
@@ -231,6 +243,28 @@
 				} catch (error) {
 					setStatus(verifyStatus, false, "Network error while verifying.");
 					verifyOutput.textContent = stringify({ error: String(error) });
+				}
+			});
+
+			const revokeForm = document.getElementById("revokeForm");
+			const revokeStatus = document.getElementById("revokeStatus");
+			const revokeOutput = document.getElementById("revokeOutput");
+
+			revokeForm.addEventListener("submit", async (event) => {
+				event.preventDefault();
+				setStatus(revokeStatus, true, "Revoking token...");
+
+				const formData = new FormData(revokeForm);
+				const tokenId = String(formData.get("tokenId") || "").trim();
+
+				try {
+					const response = await fetch(`/api/revoke/${encodeURIComponent(tokenId)}`);
+					const data = await response.json();
+					revokeOutput.textContent = stringify(data);
+					setStatus(revokeStatus, response.ok, response.ok ? "Revoke request succeeded." : "Revoke request failed.");
+				} catch (error) {
+					setStatus(revokeStatus, false, "Network error while revoking.");
+					revokeOutput.textContent = stringify({ error: String(error) });
 				}
 			});
 		</script>
