@@ -15,9 +15,9 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:800',
+          target: 'http://mongrel-underfed-upwind.ngrok-free.dev',
           changeOrigin: true,
-          secure: false,
+          rewrite: (path) => path.replace(/^\/api/, '/api'), 
         },
       },
       hmr: process.env.DISABLE_HMR !== 'true',

@@ -30,7 +30,7 @@ export interface RevokeResponse {
   details?: string;
 }
 
-const API_BASE_URL = 'http://192.168.0.244:7890/api';
+const API_BASE_URL = 'https://mongrel-underfed-upwind.ngrok-free.dev/';
 
 async function handleResponse(response: Response) {
   const data = await response.json().catch(() => ({}));
