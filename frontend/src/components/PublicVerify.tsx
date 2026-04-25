@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -14,12 +14,34 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
+const VERIFY_STATES = [
+  'INITIALIZING_PROTOCOL',
+  'ESTABLISHING_SECURE_CHANNEL',
+  'SEARCHING_BLOCK_HISTORY',
+  'VERIFYING_NODE_CONSENSUS',
+  'SYNCING_CHAIN_DATA',
+  'RESOLVING_MERKLE_PATH'
+];
+
 export function PublicVerify() {
   const [file, setFile] = useState<File | null>(null);
   const [fileHash, setFileHash] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyStatusIndex, setVerifyStatusIndex] = useState(0);
   const [verificationResult, setVerificationResult] = useState<'success' | 'failed' | null>(null);
   const [certData, setCertData] = useState<any>(null);
+
+  useEffect(() => {
+    let interval: any;
+    if (isVerifying) {
+      interval = setInterval(() => {
+        setVerifyStatusIndex((prev) => (prev + 1) % VERIFY_STATES.length);
+      }, 800);
+    } else {
+      setVerifyStatusIndex(0);
+    }
+    return () => clearInterval(interval);
+  }, [isVerifying]);
 
   const calculateHash = async (file: File) => {
     const arrayBuffer = await file.arrayBuffer();
@@ -121,12 +143,22 @@ export function PublicVerify() {
             key="verifying"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-zinc-900 border border-zinc-800 border-dashed p-32 flex flex-col items-center justify-center text-center gap-10"
+            className="bg-zinc-900 border border-zinc-800 border-dashed p-32 flex flex-col items-center justify-center text-center gap-10 shadow-[inner_0_0_50px_rgba(255,255,255,0.02)]"
           >
-            <div className="w-16 h-16 border border-zinc-800 border-t-white animate-spin" />
-            <div className="space-y-2">
-              <h2 className="text-sm font-bold text-white uppercase tracking-[0.3em]">VERIFYING_NODE_CONSENSUS</h2>
-              <p className="text-zinc-600 font-mono text-[9px] uppercase">RESOLVING_MERKLE_PATH: {fileHash?.slice(0, 24)}...</p>
+            <div className="w-16 h-16 border border-zinc-800 border-t-emerald-500 animate-spin" />
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-white uppercase tracking-[0.3em] glow-text">{VERIFY_STATES[verifyStatusIndex]}</h2>
+              <p className="text-zinc-600 font-mono text-[9px] uppercase tracking-widest">
+                {verifyStatusIndex % 2 === 0 ? 'FETCHING_CHAIN_DATA_PACKETS...' : 'VALIDATING_NODE_CONSENSUS_HASH...'}
+              </p>
+              <div className="w-48 h-1 bg-zinc-950 mx-auto mt-6">
+                 <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="h-full bg-emerald-500" 
+                 />
+              </div>
             </div>
           </motion.div>
         )}

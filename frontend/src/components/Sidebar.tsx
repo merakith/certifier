@@ -1,22 +1,22 @@
-import { LayoutDashboard, ShieldCheck, FileSearch, History, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, FileSearch, History, Settings, LogOut, Trash2 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-  { icon: FileSearch, label: 'Certificate Hash', path: '/verify' },
-  { icon: ShieldCheck, label: 'Public Verify', path: '/public-verify' },
-  { icon: ShieldCheck, label: 'Issue New', path: '/issue' },
-  { icon: History, label: 'Verification Log', path: '/history' },
-  { icon: Settings, label: 'Settings', path: '/settings' },
+  { icon: LayoutDashboard, label: 'Control Center', path: '/' },
+  { icon: ShieldCheck, label: 'Mint Certificate', path: '/issue' },
+  { icon: ShieldCheck, label: 'Verify Entity', path: '/verify' },
+  { icon: Trash2, label: 'Revoke Anchor', path: '/revoke' },
+  { icon: History, label: 'Audit Log', path: '/history' },
+  { icon: Settings, label: 'System Settings', path: '/settings' },
 ];
 
 export function Sidebar() {
   return (
     <aside className="w-64 h-full bg-zinc-950 border-r border-zinc-800 flex flex-col z-20">
       <div className="p-8 flex items-center gap-3">
-        <div className="w-6 h-6 bg-white rounded-none flex items-center justify-center">
-          <ShieldCheck className="text-zinc-950 w-4 h-4" />
+        <div className="w-8 h-8 bg-white/5 border border-zinc-800 rounded-xl flex items-center justify-center">
+          <ShieldCheck className="text-white w-5 h-5" />
         </div>
         <span className="font-bold text-sm tracking-[0.2em] text-white">Certifier</span>
       </div>
@@ -27,10 +27,10 @@ export function Sidebar() {
             key={item.path}
             to={item.path}
             className={({ isActive }) => cn(
-              "flex items-center gap-3 px-4 py-2 rounded-none transition-all duration-200 group text-[11px] font-bold uppercase tracking-widest",
+              "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group text-[10px] font-bold uppercase tracking-widest",
               isActive 
-                ? "bg-zinc-100 text-zinc-950" 
-                : "text-zinc-500 hover:text-white"
+                ? "bg-white text-zinc-950 shadow-[0_0_20px_rgba(255,255,255,0.1)]" 
+                : "text-zinc-500 hover:text-white hover:bg-white/5"
             )}
           >
             <item.icon className="w-4 h-4 transition-transform group-hover:scale-110" />

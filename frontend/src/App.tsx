@@ -4,84 +4,12 @@ import { Layout } from './components/Layout';
 import { motion, AnimatePresence } from 'motion/react';
 import { VerifyCertificate } from './components/VerifyCertificate';
 import { IssueCertificate } from './components/IssueCertificate';
+import { RevokeCertificate } from './components/RevokeCertificate';
 import { PublicVerify } from './components/PublicVerify';
 
 import { useState, useEffect } from 'react';
 
-// Dynamic Dashboard
-const Dashboard = () => {
-  const [stats, setStats] = useState({
-    totalVerified: '---',
-    blockHeight: '---',
-    network: 'FETCHING...'
-  });
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('/api/stats');
-        const data = await response.json();
-        setStats({
-          totalVerified: data.totalVerified,
-          blockHeight: data.blockHeight,
-          network: data.network
-        });
-      } catch (error) {
-        console.error("Dashboard stats fetch failed:", error);
-      }
-    };
-    fetchStats();
-    const interval = setInterval(fetchStats, 10000); // Refresh every 10s
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="space-y-12"
-    >
-      <div className="flex flex-col gap-2 items-center text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-white uppercase tracking-[0.2em]">CORE_SYSTEM_INTERFACE</h1>
-        <div className="h-[1px] w-24 bg-white opacity-20" />
-        <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mt-2">{stats.network === 'OFFLINE' ? 'STATUS: NODE_IDLE' : 'Active Node: [STANDBY_MODE]'} • Security Level: ALPHA</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-zinc-800">
-        {[
-          { label: 'TOTAL_VERIFIED', value: stats.totalVerified, trend: 'STABLE', color: 'text-emerald-500' },
-          { label: 'BLOCK_HEIGHT', value: stats.blockHeight, trend: 'LIVE', color: 'text-white' },
-          { label: 'NETWORK_NODE', value: stats.network, trend: 'ACTIVE', color: 'text-emerald-500' },
-        ].map((stat, i) => (
-          <div key={i} className="p-8 border-r last:border-r-0 border-zinc-800 bg-zinc-900 group hover:bg-zinc-800 transition-colors">
-            <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-4">{stat.label}</p>
-            <div className="flex items-end justify-between">
-              <span className="text-2xl font-mono text-white tracking-tighter">{stat.value}</span>
-              <span className={stat.color + " text-[10px] font-mono font-bold"}>[{stat.trend}]</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="border border-zinc-800 bg-zinc-900 p-20 flex flex-col items-center justify-center text-center gap-8 group">
-        <div className="relative">
-          <div className="w-20 h-20 border border-zinc-800 flex items-center justify-center group-hover:border-white transition-colors duration-500">
-             <div className="w-10 h-10 border border-zinc-800 animate-spin group-hover:border-emerald-500" />
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <h2 className="text-xl font-bold text-white uppercase tracking-widest">LISTENING_FOR_SIGNAL</h2>
-          <p className="text-[11px] font-mono text-zinc-500 max-w-xs mx-auto uppercase">Stream cryptographic data or manually input certificate hashes for node consensus.</p>
-        </div>
-
-        <button className="bg-white text-zinc-950 hover:bg-zinc-200 px-10 py-3 font-bold text-[11px] uppercase tracking-[0.2em] transition-all">
-          EXECUTE_VERIFICATION_v1.0
-        </button>
-      </div>
-    </motion.div>
-  );
-};
+import { Dashboard } from './components/Dashboard';
 
 export default function App() {
   return (
@@ -93,6 +21,7 @@ export default function App() {
             <Route path="/verify" element={<VerifyCertificate />} />
             <Route path="/public-verify" element={<PublicVerify />} />
             <Route path="/issue" element={<IssueCertificate />} />
+            <Route path="/revoke" element={<RevokeCertificate />} />
             {/* Additional routes would go here */}
           </Routes>
         </AnimatePresence>

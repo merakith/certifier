@@ -1,8 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   --color-zinc-950: #09090b;
@@ -13,8 +13,12 @@
 }
 
 @layer base {
-  body {
-    @apply bg-zinc-950 text-zinc-400 antialiased selection:bg-emerald-500/30;
+  body, html {
+    @apply bg-zinc-950 text-zinc-400 antialiased selection:bg-emerald-500/30 font-sans;
+  }
+  
+  a, button, [role="button"], input, textarea {
+    @apply transition-colors;
   }
 }
 
@@ -26,7 +30,7 @@
   }
   
   .cyber-card {
-    @apply bg-zinc-900/50 backdrop-blur-md border border-zinc-800 rounded-none shadow-none;
+    @apply bg-zinc-900/50 backdrop-blur-md border border-zinc-800 rounded-3xl shadow-2xl;
   }
 
   .vault-border {
@@ -42,7 +46,7 @@
   }
 
   .scanning-frame {
-    @apply relative border border-zinc-800 p-8 flex flex-col items-center justify-center overflow-hidden;
+    @apply relative border border-zinc-800 p-8 flex flex-col items-center justify-center overflow-hidden rounded-2xl;
   }
 
   .scanning-line {
@@ -81,9 +85,9 @@
 
 /* RainbowKit Overrides for Cyber-Minimalist Theme */
 [data-rk] {
-  --rk-colors-accentColor: #6366f1 !important;
+  --rk-colors-accentColor: #10b981 !important;
   --rk-colors-connectButtonBackground: rgba(24, 24, 27, 0.5) !important;
   --rk-colors-connectButtonText: #ffffff !important;
-  --rk-radii-connectButton: 0px !important;
-  --rk-fonts-body: "Inter", sans-serif !important;
+  --rk-radii-connectButton: 12px !important;
+  --rk-fonts-body: "Outfit", sans-serif !important;
 }
