@@ -1,14 +1,12 @@
-import { LayoutDashboard, ShieldCheck, FileSearch, History, Settings, LogOut } from 'lucide-react';
+import { ShieldCheck, FileSearch, History, ShieldPlus, LogOut } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-  { icon: FileSearch, label: 'Certificate Hash', path: '/verify' },
+  { icon: History, label: 'Asset Ledger', path: '/' },
+  { icon: FileSearch, label: 'Admin Scan', path: '/verify' },
   { icon: ShieldCheck, label: 'Public Verify', path: '/public-verify' },
-  { icon: ShieldCheck, label: 'Issue New', path: '/issue' },
-  { icon: History, label: 'Verification Log', path: '/history' },
-  { icon: Settings, label: 'Settings', path: '/settings' },
+  { icon: ShieldPlus, label: 'Issue Asset', path: '/issue' },
 ];
 
 export function Sidebar() {

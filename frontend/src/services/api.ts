@@ -30,7 +30,7 @@ export interface RevokeResponse {
   details?: string;
 }
 
-const API_BASE_URL = 'https://mongrel-underfed-upwind.ngrok-free.dev/';
+const API_BASE_URL = 'http://10.10.31.166:800/api';
 
 async function handleResponse(response: Response) {
   const data = await response.json().catch(() => ({}));
@@ -44,7 +44,9 @@ export async function issueCertificate(request: MintRequest): Promise<MintRespon
   try {
     const response = await fetch(`${API_BASE_URL}/mint`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json',
+        "ngrok-skip-browser-warning": "true", 
+       },
       body: JSON.stringify(request),
     });
     return handleResponse(response);
@@ -56,7 +58,11 @@ export async function issueCertificate(request: MintRequest): Promise<MintRespon
 
 export async function verifyCertificate(tokenId: string): Promise<VerifyResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/verify/${tokenId}`);
+    const response = await fetch(`${API_BASE_URL}/verify/${tokenId}`,{
+      headers: { 
+        "ngrok-skip-browser-warning": "true", 
+       },
+  });
     return handleResponse(response);
   } catch (error: any) {
     console.error('Verification failed:', error);
@@ -67,7 +73,11 @@ export async function verifyCertificate(tokenId: string): Promise<VerifyResponse
 export async function revokeCertificate(tokenId: string): Promise<RevokeResponse> {
   try {
     // Backend uses GET for revoke per teammate snippet
-    const response = await fetch(`${API_BASE_URL}/revoke/${tokenId}`);
+    const response = await fetch(`${API_BASE_URL}/revoke/${tokenId}`,{
+      headers: { 
+        "ngrok-skip-browser-warning": "true", 
+       },
+  });
     return handleResponse(response);
   } catch (error: any) {
     console.error('Revocation failed:', error);

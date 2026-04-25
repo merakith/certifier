@@ -19,12 +19,12 @@ import { issueCertificate, MintResponse } from '../services/api';
 import { GeometricLoader } from './GeometricLoader';
 
 export function IssueCertificate() {
-  const [studentName, setStudentName] = useState('');
-  const [walletAddress, setWalletAddress] = useState('');
+  const [name, setName] = useState('');
+  const [to, setTo] = useState('');
   const [course, setCourse] = useState('B.SC COMPUTER SCIENCE');
   const [issuer, setIssuer] = useState('GLOBAL_ACADEMIC_LEDGER');
+  const [image, setImage] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [fileHash, setFileHash] = useState<string | null>(null);
   const [isMinting, setIsMinting] = useState(false);
   const [minted, setMinted] = useState(false);
   const [txDetails, setTxDetails] = useState<{ hash: string; tokenId: string } | null>(null);
@@ -34,7 +34,8 @@ export function IssueCertificate() {
     const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    setFileHash('0x' + hashHex);
+    const fullHash = '0x' + hashHex;
+    setImage(fullHash);
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -56,23 +57,32 @@ export function IssueCertificate() {
   } as any);
 
   const handleMint = async () => {
-    if (!studentName || !walletAddress || !fileHash || !course || !issuer) return;
+    if (!name || !to || !image || !course || !issuer) return;
     setIsMinting(true);
     
     try {
       const data = await issueCertificate({
-        to: walletAddress,
-        name: studentName,
-        course: course,
-        issuer: issuer,
-        image: fileHash // Using fileHash as the "image" field represention
+        to,
+        name,
+        course,
+        issuer,
+        image,
       });
 
       if (data.status === "submitted" && data.transactionHash) {
         setTxDetails({ 
           hash: data.transactionHash, 
-          tokenId: 'PENDING_ON_CONSOLIDATION' // The index.ts doesn't return ID immediately usually, it waits for receipt or we assume next
+          tokenId: data.blockNumber ? data.blockNumber.toString() : 'PENDING'
         });
+        
+        // Save to local history
+        const history = JSON.parse(localStorage.getItem('mint_history') || '[]');
+        history.unshift({
+          ...data,
+          timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('mint_history', JSON.stringify(history.slice(0, 50)));
+
         setMinted(true);
         toast.success('Certificate anchored to blockchain', {
           style: {
@@ -114,10 +124,12 @@ export function IssueCertificate() {
   };
 
   const resetForm = () => {
-    setStudentName('');
-    setWalletAddress('');
+    setName('');
+    setTo('');
+    setCourse('B.SC COMPUTER SCIENCE');
+    setIssuer('GLOBAL_ACADEMIC_LEDGER');
+    setImage('');
     setFile(null);
-    setFileHash(null);
     setMinted(false);
     setTxDetails(null);
   };
@@ -145,22 +157,22 @@ export function IssueCertificate() {
                 
                 <div className="space-y-8">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-mono text-zinc-500 uppercase">NAME_IDENTITY</label>
+                    <label className="text-[10px] font-mono text-zinc-500 uppercase">RECIPIENT_NAME (name)</label>
                     <input 
                       type="text" 
-                      value={studentName}
-                      onChange={(e) => setStudentName(e.target.value)}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
                       placeholder="LEGAL_ENTITY_NAME"
                       className="w-full bg-zinc-950 border-b border-zinc-800 py-3 text-sm text-white focus:outline-none focus:border-white transition-all font-mono uppercase placeholder:text-zinc-800"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-mono text-zinc-500 uppercase">EVM_WALLET_DESTINATION</label>
+                    <label className="text-[10px] font-mono text-zinc-500 uppercase">EVM_WALLET_DESTINATION (to)</label>
                     <input 
                       type="text" 
-                      value={walletAddress}
-                      onChange={(e) => setWalletAddress(e.target.value)}
+                      value={to}
+                      onChange={(e) => setTo(e.target.value)}
                       placeholder="0x0000..."
                       className="w-full bg-zinc-950 border-b border-zinc-800 py-3 text-sm text-white focus:outline-none focus:border-white transition-all font-mono uppercase placeholder:text-zinc-800"
                     />
@@ -168,7 +180,7 @@ export function IssueCertificate() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-mono text-zinc-500 uppercase">COURSE_TITLE</label>
+                      <label className="text-[10px] font-mono text-zinc-500 uppercase">COURSE_TITLE (course)</label>
                       <input 
                         type="text" 
                         value={course}
@@ -178,7 +190,7 @@ export function IssueCertificate() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-mono text-zinc-500 uppercase">ISSUING_ENTITY</label>
+                      <label className="text-[10px] font-mono text-zinc-500 uppercase">ISSUING_ENTITY (issuer)</label>
                       <input 
                         type="text" 
                         value={issuer}
@@ -187,6 +199,17 @@ export function IssueCertificate() {
                         className="w-full bg-zinc-950 border-b border-zinc-800 py-3 text-[11px] text-white focus:outline-none focus:border-white transition-all font-mono uppercase placeholder:text-zinc-800"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-mono text-zinc-500 uppercase">IMAGE_DATA_OR_HASH (image)</label>
+                    <input 
+                      type="text" 
+                      value={image}
+                      onChange={(e) => setImage(e.target.value)}
+                      placeholder="0x... OR IPFS_CID"
+                      className="w-full bg-zinc-950 border-b border-zinc-800 py-3 text-[11px] text-white focus:outline-none focus:border-white transition-all font-mono uppercase placeholder:text-zinc-800"
+                    />
                   </div>
                 </div>
               </div>
@@ -231,7 +254,7 @@ export function IssueCertificate() {
                         </div>
                       </div>
                       <button 
-                        onClick={() => { setFile(null); setFileHash(null); }}
+                        onClick={() => { setFile(null); setImage(''); }}
                         className="text-zinc-600 hover:text-rose-500 transition-colors uppercase text-[9px] font-bold"
                       >
                         [PURGE_BUFFER]
@@ -240,9 +263,9 @@ export function IssueCertificate() {
 
                     <div className="bg-emerald-500/5 border border-emerald-500/20 p-4 space-y-2">
                        <label className="text-[9px] text-emerald-500 font-mono font-bold uppercase tracking-widest">CRYPTO_SIGNATURE_GENERATED</label>
-                       <div className={cn("overflow-hidden", fileHash && "typewriter")}>
+                       <div className={cn("overflow-hidden", image && "typewriter")}>
                          <p className="text-[10px] font-mono text-emerald-400 break-all leading-tight italic lowercase">
-                           {fileHash || '...entropy_analysis'}
+                           {image || '...entropy_analysis'}
                          </p>
                        </div>
                     </div>
@@ -251,7 +274,7 @@ export function IssueCertificate() {
 
                 <button 
                   onClick={handleMint}
-                  disabled={!studentName || !walletAddress || !fileHash || isMinting}
+                  disabled={!name || !to || !image || isMinting}
                   className="w-full bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-700 font-bold py-4 text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-2"
                 >
                   {isMinting ? (
@@ -274,7 +297,7 @@ export function IssueCertificate() {
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-white uppercase tracking-[0.2em]">ASSET_MINTED_SUCCESSFULLY</h2>
               <p className="text-[11px] font-mono text-zinc-500 max-w-sm mx-auto uppercase">
-                Identity anchored for "{studentName}". Metadata serialized and broadcast to the p2p network.
+                Identity anchored for "{name}". Metadata serialized and broadcast to the p2p network.
               </p>
             </div>
             
