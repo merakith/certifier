@@ -22,9 +22,10 @@ const isAddress = (value: string): boolean => {
 };
 
 const CERTIFICATE_NFT_ABI = [
-	"function mint(address to, string name, string course, string issuer, string image) external",
+	"function mint(address to, string name, string course, string issuer, string image) external returns (uint256)",
 	"function tokenURI(uint256 tokenId) view returns (string)",
-	"function revokeCert(uint256 tokenId) external"
+	"function revokeCert(uint256 tokenId) external",
+	"event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
 ];
 
 const parseTokenId = (value: string): bigint | null => {
@@ -123,11 +124,33 @@ app.post("/api/mint", async (request, response) => {
 		const tx = await contract.mint(to, name, course, issuer, image);
 		const receipt = await tx.wait();
 
+		let tokenId: string | null = null;
+
+		if (receipt) {
+			for (const log of receipt.logs) {
+				if (log.address.toLowerCase() !== config.contractAddress.toLowerCase()) {
+					continue;
+				}
+
+				try {
+					const parsedLog = contract.interface.parseLog(log);
+
+					if (parsedLog?.name === "Transfer" && parsedLog.args.from === "0x0000000000000000000000000000000000000000") {
+						tokenId = parsedLog.args.tokenId.toString();
+						break;
+					}
+				} catch {
+					continue;
+				}
+			}
+		}
+
 		response.status(202).json({
 			status: "submitted",
 			message: "Certificate mint transaction submitted.",
 			transactionHash: tx.hash,
 			blockNumber: receipt?.blockNumber ?? null,
+			tokenId: tokenId,
 			data: { to, name, course, issuer, image },
 		});
 	} catch (error) {
@@ -227,6 +250,6 @@ app.get("/api/revoke/:tokenId", async (request, response) => {
 	}
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
 	console.log(`Server listening on http://localhost:${port}`);
 });

@@ -7,6 +7,8 @@ contract CertificateNFT is ERC721 {
     uint256 public nextTokenId;
     address public owner;
 
+    event CertificateMinted(address indexed to, uint256 indexed tokenId);
+
     struct Certificate {
         string name;
         string course;
@@ -49,8 +51,8 @@ contract CertificateNFT is ERC721 {
     }
 
     // external, part of ABI, onlyOwner modifier , allow only owner to mint
-    function mint(address to, string memory name, string memory course, string memory issuer, string memory image) external onlyOwner {
-        uint256 tokenId = nextTokenId++;
+    function mint(address to, string memory name, string memory course, string memory issuer, string memory image) external onlyOwner returns (uint256 tokenId) {
+        tokenId = nextTokenId++;
 
         _safeMint(to, tokenId);
 
@@ -61,6 +63,10 @@ contract CertificateNFT is ERC721 {
             image: image,
             issuedAt: block.timestamp
         });
+
+        emit CertificateMinted(to, tokenId);
+
+        return tokenId;
     }
 
 
