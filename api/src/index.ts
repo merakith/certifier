@@ -1,311 +1,428 @@
 import "dotenv/config";
 import express from "express";
-import cors from "cors";
 import { Contract, JsonRpcProvider, Wallet } from "ethers";
 
 const app = express();
-app.set('trust proxy', 1);
-app.use(cors());
-const port = Number(process.env.PORT) || 800;
+const port = Number(process.env.PORT) || 7799;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type IssueCertificateRequest = {
-	to: string;
-	name: string;
-	course: string;
-	issuer: string;
-	image: string; // URL or ipfs:// to the certificate image
+  to:     string;
+  name:   string;
+  course: string;
+  issuer: string;
+  image:  string;   // URL or ipfs:// to the certificate image
 };
+
+type BulkIssueCertificateResult = {
+  rowNumber:       number;
+  to:              string;
+  name:            string;
+  course:          string;
+  issuer:          string;
+  image:           string;
+  status:          "submitted" | "failed";
+  tokenId:         string | null;
+  transactionHash: string | null;
+  error:           string | null;
+  ipfsURI:         string | null;
+};
+
+// ─── Validation helpers ───────────────────────────────────────────────────────
 
 const isNonEmptyString = (v: unknown): v is string =>
-	typeof v === "string" && v.trim().length > 0;
+  typeof v === "string" && v.trim().length > 0;
 
-const isAddress = (v: string): boolean => /^0x[a-fA-F0-9]{40}$/.test(v);
+const isAddress = (v: string): boolean =>
+  /^0x[a-fA-F0-9]{40}$/.test(v);
 
 const parseTokenId = (v: string): bigint | null => {
-	if (!/^\d+$/.test(v)) return null;
-	const id = BigInt(v);
-	return id >= 0n ? id : null;
+  if (!/^\d+$/.test(v)) return null;
+  const id = BigInt(v);
+  return id >= 0n ? id : null;
 };
 
+// ─── ABI ─────────────────────────────────────────────────────────────────────
+// Updated: mint() now takes (address, ipfsURI) only.
+// Added CertificateMinted + CertificateRevoked events.
+
 const CERTIFICATE_NFT_ABI = [
-	"function mint(address to, string ipfsURI) external returns (uint256)",
-	"function tokenURI(uint256 tokenId) view returns (string)",
-	"function revokeCert(uint256 tokenId) external",
-	"event CertificateMinted(address indexed to, uint256 indexed tokenId, string ipfsURI)",
-	"event CertificateRevoked(uint256 indexed tokenId)",
+  "function mint(address to, string ipfsURI) external returns (uint256)",
+  "function tokenURI(uint256 tokenId) view returns (string)",
+  "function revokeCert(uint256 tokenId) external",
+  "event CertificateMinted(address indexed to, uint256 indexed tokenId, string ipfsURI)",
+  "event CertificateRevoked(uint256 indexed tokenId)",
 ];
 
+// ─── Config helpers ───────────────────────────────────────────────────────────
+
 const getContractConfig = () => {
-	const rpcUrl = process.env.RPC_URL;
-	const contractAddress = process.env.CONTRACT_ADDRESS;
-	if (!rpcUrl || !contractAddress || !isAddress(contractAddress)) return null;
-	return { rpcUrl, contractAddress };
+  const rpcUrl         = process.env.RPC_URL;
+  const contractAddress = process.env.CONTRACT_ADDRESS;
+  if (!rpcUrl || !contractAddress || !isAddress(contractAddress)) return null;
+  return { rpcUrl, contractAddress };
 };
 
 const getOwnerPrivateKey = (): string | null => {
-	const key = process.env.OWNER_PRIVATE_KEY;
-	return key?.trim().length ? key : null;
+  const key = process.env.OWNER_PRIVATE_KEY;
+  return key?.trim().length ? key : null;
 };
 
 const getPinataJwt = (): string | null => {
-	const jwt = process.env.PINATA_JWT;
-	return jwt?.trim().length ? jwt : null;
+  const jwt = process.env.PINATA_JWT;
+  return jwt?.trim().length ? jwt : null;
 };
 
+// ─── IPFS / Pinata ────────────────────────────────────────────────────────────
+// Uploads the ERC-721 metadata JSON to Pinata and returns "ipfs://Qm..."
+
 async function pinMetadataToIPFS(metadata: object): Promise<string> {
-	const jwt = getPinataJwt();
-	if (!jwt) throw new Error("Missing PINATA_JWT environment variable.");
+  const jwt = getPinataJwt();
+  if (!jwt) throw new Error("Missing PINATA_JWT environment variable.");
 
-	const res = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: `Bearer ${jwt}`,
-		},
-		body: JSON.stringify({
-			pinataContent: metadata,
-			pinataMetadata: { name: "certificate-metadata" },
-		}),
-	});
+  const res = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
+    method:  "POST",
+    headers: {
+      "Content-Type":  "application/json",
+      "Authorization": `Bearer ${jwt}`,
+    },
+    body: JSON.stringify({
+      pinataContent: metadata,
+      pinataMetadata: { name: "certificate-metadata" },
+    }),
+  });
 
-	if (!res.ok) {
-		const text = await res.text();
-		throw new Error(`Pinata error ${res.status}: ${text}`);
-	}
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Pinata error ${res.status}: ${text}`);
+  }
 
-	const data = (await res.json()) as { IpfsHash: string };
-	return `ipfs://${data.IpfsHash}`;
+  const data = (await res.json()) as { IpfsHash: string };
+  return `ipfs://${data.IpfsHash}`;
 }
+
+// ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(express.json());
 app.use(express.static("public"));
 
+// ─── Health ───────────────────────────────────────────────────────────────────
+
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
+// ─── POST /api/mint ───────────────────────────────────────────────────────────
+// 1. Validates payload
+// 2. Builds ERC-721 metadata JSON
+// 3. Pins JSON to Pinata → gets ipfs://Qm...
+// 4. Calls contract.mint(to, ipfsURI)
+// 5. Reads tokenId from CertificateMinted event
+
 app.post("/api/mint", async (req, res) => {
-	const { to, name, course, issuer, image } =
-		req.body as Partial<IssueCertificateRequest>;
+  const { to, name, course, issuer, image } =
+    req.body as Partial<IssueCertificateRequest>;
 
-	if (
-		!isNonEmptyString(to) ||
-		!isAddress(to) ||
-		!isNonEmptyString(name) ||
-		!isNonEmptyString(course) ||
-		!isNonEmptyString(issuer) ||
-		!isNonEmptyString(image)
-	) {
-		res.status(400).json({
-			error: "Invalid payload. Expected non-empty strings for name, course, issuer, image and a valid EVM address for to.",
-		});
-		return;
-	}
+  if (
+    !isNonEmptyString(to)     || !isAddress(to)  ||
+    !isNonEmptyString(name)   ||
+    !isNonEmptyString(course) ||
+    !isNonEmptyString(issuer) ||
+    !isNonEmptyString(image)
+  ) {
+    res.status(400).json({
+      error: "Invalid payload. Expected non-empty strings for name, course, issuer, image and a valid EVM address for to.",
+    });
+    return;
+  }
 
-	const config = getContractConfig();
-	if (!config) {
-		res.status(500).json({ error: "Missing RPC_URL or CONTRACT_ADDRESS." });
-		return;
-	}
+  const config = getContractConfig();
+  if (!config) {
+    res.status(500).json({ error: "Missing RPC_URL or CONTRACT_ADDRESS." });
+    return;
+  }
 
-	const privateKey = getOwnerPrivateKey();
-	if (!privateKey) {
-		res.status(500).json({ error: "Missing OWNER_PRIVATE_KEY." });
-		return;
-	}
+  const privateKey = getOwnerPrivateKey();
+  if (!privateKey) {
+    res.status(500).json({ error: "Missing OWNER_PRIVATE_KEY." });
+    return;
+  }
 
-	try {
-		// Step 1: build ERC-721 standard metadata
-		const metadata = {
-			name: `Certificate - ${name}`,
-			description: `${name} completed ${course}, issued by ${issuer}.`,
-			image,
-			attributes: [
-				{ trait_type: "Course", value: course },
-				{ trait_type: "Issuer", value: issuer },
-				{ trait_type: "Recipient", value: name },
-				{ trait_type: "Issued", value: new Date().toISOString() },
-			],
-		};
+  try {
+    // Step 1: build ERC-721 standard metadata
+    const metadata = {
+      name:        `Certificate - ${name}`,
+      description: `${name} completed ${course}, issued by ${issuer}.`,
+      image,
+      attributes: [
+        { trait_type: "Course",    value: course },
+        { trait_type: "Issuer",    value: issuer },
+        { trait_type: "Recipient", value: name   },
+        { trait_type: "Issued",    value: new Date().toISOString() },
+      ],
+    };
 
-		// Step 2: pin to IPFS
-		const ipfsURI = await pinMetadataToIPFS(metadata);
+    // Step 2: pin to IPFS
+    const ipfsURI = await pinMetadataToIPFS(metadata);
 
-		// Step 3: call contract
-		const provider = new JsonRpcProvider(config.rpcUrl);
-		const signer = new Wallet(privateKey, provider);
-		const contract = new Contract(
-			config.contractAddress,
-			CERTIFICATE_NFT_ABI,
-			signer,
-		);
+    // Step 3: call contract
+    const provider = new JsonRpcProvider(config.rpcUrl);
+    const signer   = new Wallet(privateKey, provider);
+    const contract = new Contract(config.contractAddress, CERTIFICATE_NFT_ABI, signer);
 
-		const tx = await contract.mint(to, ipfsURI);
-		const receipt = await tx.wait();
+    const tx      = await contract.mint(to, ipfsURI);
+    const receipt = await tx.wait();
 
-		// Step 4: read tokenId from CertificateMinted event
-		let tokenId: string | null = null;
+    // Step 4: read tokenId from CertificateMinted event
+    let tokenId: string | null = null;
 
-		if (receipt) {
-			for (const log of receipt.logs) {
-				if (
-					log.address.toLowerCase() !==
-					config.contractAddress.toLowerCase()
-				)
-					continue;
-				try {
-					const parsed = contract.interface.parseLog(log);
-					if (parsed?.name === "CertificateMinted") {
-						tokenId = parsed.args.tokenId.toString();
-						break;
-					}
-				} catch {
-					continue;
-				}
-			}
-		}
+    if (receipt) {
+      for (const log of receipt.logs) {
+        if (log.address.toLowerCase() !== config.contractAddress.toLowerCase()) continue;
+        try {
+          const parsed = contract.interface.parseLog(log);
+          if (parsed?.name === "CertificateMinted") {
+            tokenId = parsed.args.tokenId.toString();
+            break;
+          }
+        } catch { continue; }
+      }
+    }
 
-		res.status(202).json({
-			status: "submitted",
-			message: "Certificate minted successfully.",
-			transactionHash: tx.hash,
-			blockNumber: receipt?.blockNumber ?? null,
-			tokenId,
-			ipfsURI,
-		});
-	} catch (error) {
-		res.status(500).json({
-			error: "Failed to issue certificate.",
-			details: error instanceof Error ? error.message : "Unknown error",
-		});
-	}
+    res.status(202).json({
+      status:          "submitted",
+      message:         "Certificate minted successfully.",
+      transactionHash: tx.hash,
+      blockNumber:     receipt?.blockNumber ?? null,
+      tokenId,
+      ipfsURI,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error:   "Failed to issue certificate.",
+      details: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 });
+
+// bulk mint
+const BULK_MINT_COLUMNS = ["to", "name", "course", "issuer", "image"] as const;
+const MAX_BULK_MINT_ROWS = 500;
+type BulkMintRow = Record<typeof BULK_MINT_COLUMNS[number], string>;
+app.post("/api/mint/bulk/csv", express.text({ type: "text/csv" }), async (req, res) => {
+  if (!req.body) {
+    res.status(400).json({ error: "No CSV body provided." });
+    return;
+  }
+
+  const lines = (req.body as string).trim().split("\n");
+  const headers = lines[0].split(",").map(h => h.trim());
+
+  const missingCols = BULK_MINT_COLUMNS.filter(c => !headers.includes(c));
+  if (missingCols.length > 0) {
+    res.status(400).json({ error: `Missing columns: ${missingCols.join(", ")}` });
+    return;
+  }
+
+  const dataLines = lines.slice(1).filter(l => l.trim().length > 0);
+
+  if (dataLines.length === 0) {
+    res.status(400).json({ error: "CSV has no data rows." });
+    return;
+  }
+
+  if (dataLines.length > MAX_BULK_MINT_ROWS) {
+    res.status(400).json({ error: `Too many rows. Max is ${MAX_BULK_MINT_ROWS}.` });
+    return;
+  }
+
+  const rows: BulkMintRow[] = dataLines.map(line => {
+    const values = line.split(",").map(v => v.trim());
+    return Object.fromEntries(
+      BULK_MINT_COLUMNS.map(col => [col, values[headers.indexOf(col)] ?? ""])
+    ) as BulkMintRow;
+  });
+
+  const config = getContractConfig();
+  if (!config) { res.status(500).json({ error: "Missing RPC_URL or CONTRACT_ADDRESS." }); return; }
+
+  const privateKey = getOwnerPrivateKey();
+  if (!privateKey) { res.status(500).json({ error: "Missing OWNER_PRIVATE_KEY." }); return; }
+
+  const provider = new JsonRpcProvider(config.rpcUrl);
+  const signer   = new Wallet(privateKey, provider);
+  const contract = new Contract(config.contractAddress, CERTIFICATE_NFT_ABI, signer);
+
+  const results: BulkIssueCertificateResult[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const { to, name, course, issuer, image } = rows[i];
+
+    if (!isNonEmptyString(to) || !isAddress(to) || !isNonEmptyString(name) ||
+        !isNonEmptyString(course) || !isNonEmptyString(issuer) || !isNonEmptyString(image)) {
+      results.push({ rowNumber: i + 2, to, name, course, issuer, image, status: "failed", tokenId: null, transactionHash: null, ipfsURI:null, error: "Invalid or missing fields." });
+      continue;
+    }
+
+    try {
+      const metadata = {
+        name:        `Certificate - ${name}`,
+        description: `${name} completed ${course}, issued by ${issuer}.`,
+        image,
+        attributes: [
+          { trait_type: "Course",    value: course },
+          { trait_type: "Issuer",    value: issuer },
+          { trait_type: "Recipient", value: name   },
+          { trait_type: "Issued",    value: new Date().toISOString() },
+        ],
+      };
+
+      const ipfsURI = await pinMetadataToIPFS(metadata);
+      const tx      = await contract.mint(to, ipfsURI);
+      const receipt = await tx.wait();
+
+      let tokenId: string | null = null;
+      if (receipt) {
+        for (const log of receipt.logs) {
+          if (log.address.toLowerCase() !== config.contractAddress.toLowerCase()) continue;
+          try {
+            const parsed = contract.interface.parseLog(log);
+            if (parsed?.name === "CertificateMinted") { tokenId = parsed.args.tokenId.toString(); break; }
+          } catch { continue; }
+        }
+      }
+
+      results.push({ rowNumber: i + 2, to, name, course, issuer, image, status: "submitted", tokenId, transactionHash: tx.hash, ipfsURI, error: null });
+
+    } catch (error) {
+      results.push({ rowNumber: i + 2, to, name, course, issuer, image, status: "failed", tokenId: null, transactionHash: null, ipfsURI: null, error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  }
+
+  const succeeded = results.filter(r => r.status === "submitted").length;
+  const failed    = results.filter(r => r.status === "failed").length;
+
+  res.status(202).json({ total: rows.length, succeeded, failed, results });
+});
+
+// ─── GET /api/verify/:tokenId ─────────────────────────────────────────────────
+// Reads tokenURI from chain (HTTPS gateway URL), fetches the JSON from IPFS,
+// returns the full metadata so the frontend can display the certificate.
 
 app.get("/api/verify/:tokenId", async (req, res) => {
-	const tokenId = parseTokenId(req.params.tokenId);
-	if (tokenId === null) {
-		res.status(400).json({ error: "Invalid tokenId." });
-		return;
-	}
+  const tokenId = parseTokenId(req.params.tokenId);
+  if (tokenId === null) {
+    res.status(400).json({ error: "Invalid tokenId." });
+    return;
+  }
 
-	const config = getContractConfig();
-	if (!config) {
-		res.status(500).json({ error: "Missing RPC_URL or CONTRACT_ADDRESS." });
-		return;
-	}
+  const config = getContractConfig();
+  if (!config) {
+    res.status(500).json({ error: "Missing RPC_URL or CONTRACT_ADDRESS." });
+    return;
+  }
 
-	try {
-		const provider = new JsonRpcProvider(config.rpcUrl);
-		const contract = new Contract(
-			config.contractAddress,
-			CERTIFICATE_NFT_ABI,
-			provider,
-		);
+  try {
+    const provider = new JsonRpcProvider(config.rpcUrl);
+    const contract = new Contract(config.contractAddress, CERTIFICATE_NFT_ABI, provider);
 
-		// tokenURI() now returns an HTTPS Pinata gateway URL
-		const gatewayUrl = (await contract.tokenURI(tokenId)) as string;
+    // tokenURI() now returns an HTTPS Pinata gateway URL
+    const gatewayUrl = (await contract.tokenURI(tokenId)) as string;
 
-		// Fetch the actual metadata JSON from IPFS via the gateway
-		const ipfsRes = await fetch(gatewayUrl);
-		if (!ipfsRes.ok) {
-			throw new Error(`IPFS gateway error: ${ipfsRes.status}`);
-		}
-		const metadata = await ipfsRes.json();
+    // Fetch the actual metadata JSON from IPFS via the gateway
+    const ipfsRes = await fetch(gatewayUrl);
+    if (!ipfsRes.ok) {
+      throw new Error(`IPFS gateway error: ${ipfsRes.status}`);
+    }
+    const metadata = await ipfsRes.json();
 
-		res.json({
-			verified: true,
-			tokenId: tokenId.toString(),
-			gatewayUrl,
-			metadata,
-		});
-	} catch (error) {
-		res.status(404).json({
-			verified: false,
-			error: "Token could not be verified on-chain.",
-			details: error instanceof Error ? error.message : "Unknown error",
-		});
-	}
+    res.json({
+      verified:   true,
+      tokenId:    tokenId.toString(),
+      gatewayUrl,
+      metadata,
+    });
+  } catch (error) {
+    res.status(404).json({
+      verified: false,
+      error:    "Token could not be verified on-chain.",
+      details:  error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 });
+
+// ─── POST /api/revoke ─────────────────────────────────────────────────────────
+// Changed from GET to POST — state-changing actions should never be GET requests.
 
 app.get("/api/revoke/:tokenId", async (req, res) => {
-	const tokenId = parseTokenId(req.params.tokenId);
-	if (tokenId === null) {
-		res.status(400).json({ error: "Invalid tokenId." });
-		return;
-	}
+  const tokenId = parseTokenId(req.params.tokenId);
+  if (tokenId === null) {
+    res.status(400).json({ error: "Invalid tokenId." });
+    return;
+  }
 
-	const config = getContractConfig();
-	if (!config) {
-		res.status(500).json({ error: "Missing RPC_URL or CONTRACT_ADDRESS." });
-		return;
-	}
+  const config = getContractConfig();
+  if (!config) {
+    res.status(500).json({ error: "Missing RPC_URL or CONTRACT_ADDRESS." });
+    return;
+  }
 
-	const privateKey = getOwnerPrivateKey();
-	if (!privateKey) {
-		res.status(500).json({ error: "Missing OWNER_PRIVATE_KEY." });
-		return;
-	}
+  const privateKey = getOwnerPrivateKey();
+  if (!privateKey) {
+    res.status(500).json({ error: "Missing OWNER_PRIVATE_KEY." });
+    return;
+  }
 
-	const jwt = getPinataJwt();
+  const jwt = getPinataJwt();
 
-	try {
-		const provider = new JsonRpcProvider(config.rpcUrl);
-		const signer = new Wallet(privateKey, provider);
-		const contract = new Contract(
-			config.contractAddress,
-			CERTIFICATE_NFT_ABI,
-			signer,
-		);
+  try {
+    const provider = new JsonRpcProvider(config.rpcUrl);
+    const signer   = new Wallet(privateKey, provider);
+    const contract = new Contract(config.contractAddress, CERTIFICATE_NFT_ABI, signer);
 
-		let cid: string | null = null;
-		try {
-			const uri = (await contract.tokenURI(tokenId)) as string;
-			console.log("Gateway URL:", uri);
-			cid = uri.split("/ipfs/")[1] ?? null;
-			console.log("CID:", cid);
-		} catch {
-			console.log("Could not fetch tokenURI before burn");
-		}
+    let cid: string | null = null;
+    try {
+      const uri = (await contract.tokenURI(tokenId)) as string;
+      console.log("Gateway URL:", uri);
+      cid = uri.split("/ipfs/")[1] ?? null;
+      console.log("CID:", cid);
+    } catch {
+      console.log("Could not fetch tokenURI before burn");
+    }
 
-		const tx = await contract.revokeCert(tokenId);
-		const receipt = await tx.wait();
+    const tx      = await contract.revokeCert(tokenId);
+    const receipt = await tx.wait();
 
-		let unpinned = false; // ← must be declared here
-		if (cid && jwt) {
-			const unpinRes = await fetch(
-				`https://api.pinata.cloud/pinning/unpin/${cid}`,
-				{
-					method: "DELETE",
-					headers: { Authorization: `Bearer ${jwt}` },
-				},
-			);
-			const unpinText = await unpinRes.text();
-			console.log("Unpin status:", unpinRes.status);
-			console.log("Unpin response:", unpinText);
-			unpinned = unpinRes.ok;
-		} else {
-			console.log(
-				"Skipped unpin — cid:",
-				cid,
-				"jwt:",
-				jwt ? "present" : "MISSING",
-			);
-		}
+    let unpinned = false;  // ← must be declared here
+    if (cid && jwt) {
+      const unpinRes = await fetch(`https://api.pinata.cloud/pinning/unpin/${cid}`, {
+        method:  "DELETE",
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
+      const unpinText = await unpinRes.text();
+      console.log("Unpin status:", unpinRes.status);
+      console.log("Unpin response:", unpinText);
+      unpinned = unpinRes.ok;
+    } else {
+      console.log("Skipped unpin — cid:", cid, "jwt:", jwt ? "present" : "MISSING");
+    }
 
-		res.json({
-			revoked: true,
-			tokenId: tokenId.toString(),
-			transactionHash: tx.hash,
-			blockNumber: receipt?.blockNumber ?? null,
-			unpinned,
-		});
-	} catch (error) {
-		res.status(500).json({
-			revoked: false,
-			error: "Failed to revoke certificate.",
-			details: error instanceof Error ? error.message : "Unknown error",
-		});
-	}
+    res.json({
+      revoked:         true,
+      tokenId:         tokenId.toString(),
+      transactionHash: tx.hash,
+      blockNumber:     receipt?.blockNumber ?? null,
+      unpinned,
+    });
+  } catch (error) {
+    res.status(500).json({
+      revoked: false,
+      error:   "Failed to revoke certificate.",
+      details: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 });
+// ─── Start ────────────────────────────────────────────────────────────────────
 
 app.listen(port, "0.0.0.0", () => {
-	console.log(`Server listening on http://localhost:${port}`);
+  console.log(`Server listening on http://localhost:${port}`);
 });
