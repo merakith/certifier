@@ -199,8 +199,18 @@ app.get("/api/revoke/:tokenId", async (request, response) => {
 	}
 
 	try {
+		const privateKey = getMintSignerPrivateKey();
+
+		if (!privateKey) {
+			response.status(500).json({
+				error: "Missing OWNER_PRIVATE_KEY for mint transaction signing.",
+			});
+			return;
+		}
+
 		const provider = new JsonRpcProvider(config.rpcUrl);
-		const contract = new Contract(config.contractAddress, CERTIFICATE_NFT_ABI, provider);
+		const signer = new Wallet(privateKey, provider);
+		const contract = new Contract(config.contractAddress, CERTIFICATE_NFT_ABI, signer);
 
 		await contract.revokeCert(tokenId);
 
