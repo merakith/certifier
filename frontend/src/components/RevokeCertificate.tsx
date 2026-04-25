@@ -25,10 +25,10 @@ export function RevokeCertificate() {
       if (data.success) {
         setResult(data);
       } else {
-        setError(data.error || 'REVOCATION_FAILED');
+        setError(data.error || data.message || 'REVOCATION_FAILED');
       }
-    } catch (err) {
-      setError('NETWORK_FAILURE');
+    } catch (err: any) {
+      setError(`NETWORK_FAILURE: ${err.message}`);
     } finally {
       setIsRevoking(false);
     }

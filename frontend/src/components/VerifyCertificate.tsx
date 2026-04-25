@@ -37,19 +37,18 @@ export function VerifyCertificate() {
     setResult(null);
 
     try {
-      const response = await fetch('/api/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tokenId })
+      const response = await fetch(`/api/verify/${tokenId}`, {
+        method: 'GET'
       });
 
       const data = await response.json();
-      if (data.valid) {
-        setResult(data.data);
+      if (data.verified) {
+        setResult(data);
       } else {
         setError(true);
       }
     } catch (err) {
+      console.error("Verification failed:", err);
       setError(true);
     } finally {
       setIsVerifying(false);
@@ -109,9 +108,9 @@ export function VerifyCertificate() {
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="scanning-frame border-dashed opacity-50"
+                className="p-8 border border-zinc-800 border-dashed rounded-3xl flex items-center justify-center text-center opacity-50"
               >
-                <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.2em]">AWAITING_INPUT_SIGNAL...</p>
+                <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.2em]">Awaiting input signal...</p>
               </motion.div>
             )}
 
@@ -119,10 +118,10 @@ export function VerifyCertificate() {
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="scanning-frame border-emerald-500/20"
+                className="p-8 border border-emerald-500/20 rounded-3xl relative overflow-hidden flex items-center justify-center text-center"
               >
-                <div className="scanning-line" />
-                <p className="text-[10px] font-mono text-emerald-500 uppercase tracking-[0.2em] relative z-10">Searching_Relay_Nodes...</p>
+                <div className="absolute inset-0 bg-emerald-500/5 animate-pulse" />
+                <p className="text-[10px] font-mono text-emerald-500 uppercase tracking-[0.2em] relative z-10">Searching Relay Nodes...</p>
               </motion.div>
             )}
 
@@ -130,25 +129,52 @@ export function VerifyCertificate() {
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-emerald-500/5 border border-emerald-500/50 p-6 space-y-4"
+                className="bg-emerald-500/5 border border-emerald-500/30 rounded-3xl overflow-hidden flex flex-col"
               >
-                <div className="flex items-center gap-3 text-emerald-500">
-                  <ShieldCheck className="w-4 h-4" />
-                  <h3 className="font-bold uppercase tracking-widest text-[10px]">Node_Consensus: MATCHED</h3>
-                </div>
-                <div className="grid grid-cols-1 gap-4 text-[10px] font-mono">
-                  <div className="space-y-1">
-                    <p className="text-zinc-600 uppercase">Validated_Entity</p>
-                    <p className="text-white uppercase font-bold text-xs">{result.studentName}</p>
+                <div className="p-6 space-y-6">
+                  <div className="flex items-center gap-3 text-emerald-500">
+                    <ShieldCheck className="w-5 h-5" />
+                    <h3 className="font-bold uppercase tracking-widest text-[11px]">Consensus: Matched</h3>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-zinc-600 uppercase">Relay_Status</p>
-                    <p className="text-emerald-500 font-bold uppercase">VALID_ON_CHAIN_ANCHOR</p>
+
+                  <div className="flex gap-6 p-4 bg-zinc-950/40 rounded-2xl border border-emerald-500/10">
+                    <div className="w-20 h-20 rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden flex-shrink-0">
+                      {result.metadata?.image && (
+                         <img src={result.metadata.image} alt="Verify" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      )}
+                    </div>
+                    <div className="space-y-3 py-1 flex-1 overflow-hidden">
+                       <div className="space-y-0.5">
+                         <p className="text-[9px] uppercase text-zinc-600 font-bold tracking-widest leading-none">Entity</p>
+                         <p className="text-sm text-white font-medium truncate">{result.metadata?.name?.replace('Certificate - ', '')}</p>
+                       </div>
+                       <div className="space-y-0.5">
+                         <p className="text-[9px] uppercase text-zinc-600 font-bold tracking-widest leading-none">Course</p>
+                         <p className="text-xs text-emerald-500 font-medium truncate">
+                           {result.metadata?.attributes?.find((a: any) => a.trait_type === 'Course')?.value || 'N/A'}
+                         </p>
+                       </div>
+                    </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="p-3 bg-zinc-950/40 rounded-xl border border-zinc-800/50">
+                        <p className="text-[8px] uppercase text-zinc-600 font-bold tracking-widest mb-1">Status</p>
+                        <p className="text-[10px] text-emerald-500 font-bold uppercase">Valid Anchor</p>
+                     </div>
+                     <div className="p-3 bg-zinc-950/40 rounded-xl border border-zinc-800/50">
+                        <p className="text-[8px] uppercase text-zinc-600 font-bold tracking-widest mb-1">Token_ID</p>
+                        <p className="text-[10px] text-white font-bold uppercase">#{result.tokenId}</p>
+                     </div>
+                  </div>
+
+                  <button 
+                    onClick={reset} 
+                    className="w-full text-zinc-700 hover:text-white text-[10px] uppercase font-bold tracking-widest pt-2 transition-colors border-t border-zinc-800/50"
+                  >
+                    Clear Search
+                  </button>
                 </div>
-                <button onClick={reset} className="w-full text-zinc-600 hover:text-white text-[9px] uppercase font-bold tracking-widest pt-2 transition-colors">
-                  [RESET_SCAN]
-                </button>
               </motion.div>
             )}
 
@@ -156,13 +182,13 @@ export function VerifyCertificate() {
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-rose-500/5 border border-rose-500/50 p-6 flex flex-col items-center gap-3 text-center"
+                className="bg-rose-500/5 border border-rose-500/30 p-8 rounded-3xl flex flex-col items-center gap-3 text-center"
               >
-                <AlertCircle className="text-rose-500 w-6 h-6" />
-                <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">INTEGRITY_MISMATCH</p>
-                <p className="text-[10px] font-mono text-rose-400 opacity-70 uppercase leading-relaxed">No matching anchor found for TokenID on the current relay network.</p>
-                <button onClick={reset} className="text-zinc-700 hover:text-white text-[9px] uppercase font-bold tracking-widest pt-2 transition-colors">
-                  [PURGE_BUFFER]
+                <AlertCircle className="text-rose-500 w-8 h-8" />
+                <p className="text-xs font-bold text-rose-500 uppercase tracking-widest">Integrity Mismatch</p>
+                <p className="text-xs text-zinc-500 leading-relaxed max-w-[200px]">No matching anchor found for Token ID on the current relay network.</p>
+                <button onClick={reset} className="mt-4 text-zinc-600 hover:text-white text-[10px] uppercase font-bold tracking-widest transition-colors">
+                  Purge Buffer
                 </button>
               </motion.div>
             )}

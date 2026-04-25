@@ -19,21 +19,51 @@ app.post("/api/mint", async (req, res) => {
     const response = await fetch(`${API_BASE_URL}/api/mint`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(10000)
     });
     
     const data = await response.json();
-    console.log("External API Response:", { status: response.status, data });
+    console.log("External Mint API Response:", { status: response.status, data });
     
     res.status(response.status).json(data);
   } catch (error: any) {
     console.error("External Minting proxy failed:", error);
-    res.status(500).json({ success: false, error: `PROXY_CONNECTION_ERROR: ${error.message}` });
+    res.status(500).json({ 
+      success: false, 
+      error: `PROXY_CONNECTION_ERROR: ${error.message}`, 
+      cause: error.cause ? error.cause.message || JSON.stringify(error.cause) : null,
+      stack: error.stack 
+    });
+  }
+});
+
+app.get("/api/verify/:tokenId", async (req, res) => {
+  const { tokenId } = req.params;
+  console.log("Proxying verify GET request to:", `${API_BASE_URL}/api/verify/${tokenId}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/verify/${tokenId}`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(10000)
+    });
+    
+    const data = await response.json();
+    console.log("External Verify API Response:", { status: response.status, data });
+    
+    res.status(response.status).json(data);
+  } catch (error: any) {
+    console.error("External Verification proxy failed:", error);
+    res.status(500).json({ 
+      verified: false, 
+      error: `PROXY_CONNECTION_ERROR: ${error.message}`, 
+      cause: error.cause ? error.cause.message || JSON.stringify(error.cause) : null,
+      stack: error.stack 
+    });
   }
 });
 
 app.post("/api/verify", async (req, res) => {
-  console.log("Proxying verify request to:", `${API_BASE_URL}/api/verify`);
+  console.log("Proxying verify POST request (fallback) to:", `${API_BASE_URL}/api/verify`);
   try {
     const response = await fetch(`${API_BASE_URL}/api/verify`, {
       method: 'POST',

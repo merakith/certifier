@@ -56,19 +56,27 @@ export function IssueCertificate() {
 
       const data = await response.json();
       
-      if (data.success) {
+      // Checking for transactionHash or status as per user's example
+      if (data.transactionHash || data.status === 'submitted') {
         setTxDetails({
-          hash: data.hash,
-          blockNumber: data.blockNumber
+          hash: data.transactionHash,
+          blockNumber: data.blockNumber,
+          tokenId: data.tokenId,
+          mintedData: data.data || {
+            name: studentName,
+            course: course,
+            issuer: issuer,
+            image: imageURL
+          }
         });
         setMinted(true);
       } else {
-        console.error("Minting failed:", data.error);
-        alert("Minting failed: " + (data.error || "Unknown error"));
+        console.error("Minting failed:", data.error || data.message);
+        alert("Minting failed: " + (data.error || data.message || "Unknown error"));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Network error during minting:", error);
-      alert("NETWORK_STABILITY_ERROR: Check console.");
+      alert("MINTING_ERROR: " + error.message);
     } finally {
       setIsMinting(false);
     }
@@ -178,35 +186,61 @@ export function IssueCertificate() {
           key="success-state"
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-zinc-900 border border-emerald-500/50 p-12 flex flex-col items-center justify-center text-center gap-8"
+          className="bg-zinc-900 border border-emerald-500/30 overflow-hidden rounded-3xl shadow-2xl flex flex-col"
         >
-          <div className="w-16 h-16 border-2 border-emerald-500 flex items-center justify-center">
-             <CheckCircle2 className="text-emerald-500 w-8 h-8" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-white uppercase tracking-widest">CONSENSUS_ACHIEVED</h2>
-            <p className="text-[10px] font-mono text-zinc-500 max-w-sm mx-auto uppercase">
-               IDENTITY_ANCHORED_SUCCESSFULLY: {studentName} registered on relay.
-            </p>
-          </div>
-          
-          <div className="w-full max-w-md bg-zinc-950 border border-zinc-800 p-6 font-mono text-[9px] text-zinc-600 space-y-2 text-left uppercase">
-             <div className="flex justify-between border-b border-zinc-900 pb-1">
-               <span>TX_HASH:</span>
-               <span className="text-emerald-500">{txDetails?.hash?.slice(0, 16)}...</span>
-             </div>
-             <div className="flex justify-between border-b border-zinc-900 pb-1">
-               <span>BLOCK_HEIGHT:</span>
-               <span className="text-white">#{txDetails?.blockNumber}</span>
-             </div>
-          </div>
+          <div className="p-8 space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                 <CheckCircle2 className="text-emerald-500 w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white leading-tight">Minting Successful</h2>
+                <p className="text-xs text-zinc-500">Asset successfully anchored to the blockchain.</p>
+              </div>
+            </div>
 
-          <button 
-            onClick={resetForm} 
-            className="w-full max-w-md bg-white text-zinc-950 font-bold py-4 text-[11px] uppercase tracking-widest hover:bg-zinc-200 transition-all text-center"
-          >
-             ISSUE_NEXT_CREDENTIAL
-          </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-950/50 p-6 rounded-2xl border border-zinc-800">
+               <div className="aspect-video rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden flex items-center justify-center">
+                  {txDetails?.mintedData?.image ? (
+                    <img src={txDetails.mintedData.image} alt="Certificate" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="text-zinc-700 text-xs font-mono uppercase">Image_Not_Found</div>
+                  )}
+               </div>
+               <div className="space-y-4 py-2">
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase text-zinc-600 font-bold tracking-widest">Recipient</p>
+                    <p className="text-sm text-white font-medium">{txDetails?.mintedData?.name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase text-zinc-600 font-bold tracking-widest">Course</p>
+                    <p className="text-sm text-white font-medium">{txDetails?.mintedData?.course}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase text-zinc-600 font-bold tracking-widest">Token ID</p>
+                    <p className="text-sm text-emerald-500 font-mono font-bold">#{txDetails?.tokenId}</p>
+                  </div>
+               </div>
+            </div>
+            
+            <div className="w-full bg-zinc-950/80 rounded-2xl border border-zinc-800 p-5 font-mono text-[10px] text-zinc-500 space-y-2">
+               <div className="flex justify-between gap-4">
+                 <span className="uppercase text-zinc-700">Transaction_Hash</span>
+                 <span className="text-emerald-500/80 truncate max-w-[200px]">{txDetails?.hash}</span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="uppercase text-zinc-700">Block_Height</span>
+                 <span className="text-white/80">#{txDetails?.blockNumber}</span>
+               </div>
+            </div>
+
+            <button 
+              onClick={resetForm} 
+              className="w-full bg-white text-zinc-950 font-bold py-4 text-xs transition-all flex items-center justify-center gap-2 rounded-2xl hover:bg-zinc-200"
+            >
+               Issue Another Credential
+            </button>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
