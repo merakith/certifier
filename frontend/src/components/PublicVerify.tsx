@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { motion, AnimatePresence } from 'motion/react';
 import { 
   Upload, 
   ShieldCheck, 
@@ -97,170 +96,97 @@ export function PublicVerify() {
       : null;
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 space-y-16">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        whileInView={{ opacity: 1, scale: 1, y: 0 }}
-        viewport={{ once: false }}
-        transition={{ type: "spring", damping: 15, stiffness: 100 }}
-        className="text-center space-y-4"
-      >
-        <h1 className="text-5xl font-bold text-white tracking-widest uppercase">Verification Portal</h1>
-        <p className="text-zinc-500 text-xs max-w-sm mx-auto uppercase tracking-widest leading-loose">
-          Secure cryptographic validation of educational credentials.
-        </p>
-      </motion.div>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <section className="panel p-6 md:p-8">
+        <h2 className="section-title text-xl md:text-2xl">Public PDF Verification</h2>
+        <p className="section-subtitle mt-2">Upload a PDF certificate and validate its SHA-256 hash against on-chain data.</p>
 
-      <AnimatePresence mode="wait">
         {!file && !isVerifying && (
-          <motion.div
-            key="upload-zone"
-            initial={{ opacity: 0, scale: 0.9, y: 40 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: false }}
-            transition={{ type: "spring", damping: 15, stiffness: 100, delay: 0.1 }}
-            className="group"
+          <div
+            {...getRootProps()}
+            className={cn(
+              'mt-6 cursor-pointer rounded-2xl border border-dashed p-10 text-center',
+              isDragActive ? 'border-[#1f6feb] bg-[#0d1f3a]' : 'border-[#30363d] bg-[#0d1117]'
+            )}
           >
-            <div 
-              {...getRootProps()}
-              className={cn(
-                "bg-zinc-900/40 backdrop-blur-md p-20 cursor-pointer transition-all duration-700 min-h-[400px] border rounded-3xl",
-                isDragActive ? "border-emerald-500 bg-emerald-500/5 shadow-[0_0_50px_rgba(16,185,129,0.1)]" : "border-zinc-800 hover:border-zinc-500"
-              )}
-            >
-              <input {...getInputProps()} />
-              <div className="relative z-10 flex flex-col items-center">
-                 <div className="w-16 h-16 border border-zinc-800 rounded-2xl flex items-center justify-center mb-10 group-hover:border-white transition-colors">
-                    <Upload className="w-6 h-6 text-zinc-600 group-hover:text-white" />
-                 </div>
-                 <h3 className="text-sm font-semibold text-white tracking-wide mb-4">DRAG & DROP CERTIFICATE</h3>
-                 <p className="text-zinc-500 text-xs max-w-[240px] leading-relaxed">
-                   Select a PDF certificate to verify its authenticity on the blockchain.
-                 </p>
-              </div>
-            </div>
-          </motion.div>
+            <input {...getInputProps()} />
+            <Upload className="mx-auto h-8 w-8 text-[#8b949e]" />
+            <p className="mt-3 text-sm font-medium text-[#c9d1d9]">Drop a PDF here or click to upload</p>
+            <p className="mt-1 text-sm text-[#8b949e]">Only .pdf files are accepted.</p>
+          </div>
         )}
 
         {isVerifying && (
-          <motion.div
-            key="verifying"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-zinc-900 border border-zinc-800 border-dashed p-32 flex flex-col items-center justify-center text-center gap-10 shadow-[inner_0_0_50px_rgba(255,255,255,0.02)]"
-          >
-            <div className="w-16 h-16 border border-zinc-800 border-t-emerald-500 animate-spin" />
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white uppercase tracking-[0.3em] glow-text">{VERIFY_STATES[verifyStatusIndex]}</h2>
-              <p className="text-zinc-600 font-mono text-[9px] uppercase tracking-widest">
-                {verifyStatusIndex % 2 === 0 ? 'FETCHING_CHAIN_DATA_PACKETS...' : 'VALIDATING_NODE_CONSENSUS_HASH...'}
-              </p>
-              <div className="w-48 h-1 bg-zinc-950 mx-auto mt-6">
-                 <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: '100%' }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="h-full bg-emerald-500" 
-                 />
-              </div>
-            </div>
-          </motion.div>
+          <div className="panel mt-6 p-5">
+            <p className="text-sm font-medium text-[#c9d1d9]">Verifying document...</p>
+            <p className="mt-1 font-mono text-xs text-[#8b949e]">{VERIFY_STATES[verifyStatusIndex]}</p>
+          </div>
         )}
 
         {verificationResult === 'success' && certData && (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-8"
-          >
-            <div className="bg-zinc-900 border border-emerald-500/30 p-12 relative">
-               <div className="absolute top-4 right-4">
-                  <ShieldCheck className="w-24 h-24 text-emerald-500/5 rotate-12" />
-               </div>
-
-               <div className="flex flex-col md:flex-row gap-10 items-center">
-                  <div className="w-16 h-16 border-2 border-emerald-500 flex items-center justify-center shrink-0">
-                     <ShieldCheck className="w-8 h-8 text-emerald-500" />
-                  </div>
-                  <div className="space-y-1 text-center md:text-left">
-                     <h2 className="text-2xl font-bold text-white uppercase tracking-widest font-mono">STATUS: VALIDATED</h2>
-                     <p className="text-emerald-500 font-mono text-[9px] font-bold uppercase tracking-[0.2em]">IDENTIFIED_ENTITY: {certData.studentName}</p>
-                  </div>
-               </div>
-
-               <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-px bg-zinc-800">
-                  <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">RECIPIENT_WALLET</p>
-                     <p className="text-xs text-white font-mono truncate">{certData.recipientWallet}</p>
-                  </div>
-                  <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">CHAIN_ANCHOR_HASH</p>
-                     <p className="text-xs text-emerald-500 font-mono truncate">{fileHash}</p>
-                  </div>
-                  <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">BLOCK_HEIGHT</p>
-                     <p className="text-xs text-white font-mono">{certData.blockNumber}</p>
-                  </div>
-                  <div className="bg-zinc-950 p-6 space-y-1">
-                     <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">TIMESTAMP</p>
-                     <p className="text-xs text-white font-mono uppercase">{new Date(certData.timestamp).toLocaleDateString()}</p>
-                  </div>
-               </div>
-
-               <div className="mt-8 flex gap-4">
-                  <a
-                    href={explorerHref || '#'}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={cn(
-                      'flex-1 bg-white text-zinc-950 font-bold py-4 text-[10px] uppercase tracking-[0.3em] transition-all text-center',
-                      explorerHref ? 'hover:bg-zinc-200' : 'pointer-events-none opacity-50'
-                    )}
-                  >
-                    BLOCK_EXPLORER
-                  </a>
-                  <button onClick={reset} className="px-8 bg-zinc-950 border border-zinc-800 text-zinc-400 font-bold py-4 text-[10px] uppercase tracking-widest hover:border-white hover:text-white transition-all">
-                    [RESET_GATEWAY]
-                  </button>
-               </div>
+          <div className="panel mt-6 p-5">
+            <div className="flex items-start gap-2 text-[#3fb950]">
+              <ShieldCheck className="mt-0.5 h-5 w-5" />
+              <div>
+                <h3 className="text-base font-semibold">Verification successful</h3>
+                <p className="mt-1 text-sm text-[#8b949e]">Certificate hash matches a valid record.</p>
+              </div>
             </div>
-          </motion.div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <article className="panel p-4">
+                <p className="text-xs text-[#8b949e]">Student Name</p>
+                <p className="mt-1 text-sm font-medium text-[#c9d1d9]">{certData.studentName || 'N/A'}</p>
+              </article>
+              <article className="panel p-4">
+                <p className="text-xs text-[#8b949e]">Recipient Wallet</p>
+                <p className="mt-1 break-all font-mono text-sm text-[#c9d1d9]">{certData.recipientWallet || 'N/A'}</p>
+              </article>
+              <article className="panel p-4">
+                <p className="text-xs text-[#8b949e]">Block Number</p>
+                <p className="mt-1 font-mono text-sm text-[#c9d1d9]">{certData.blockNumber || 'N/A'}</p>
+              </article>
+              <article className="panel p-4">
+                <p className="text-xs text-[#8b949e]">Timestamp</p>
+                <p className="mt-1 text-sm text-[#c9d1d9]">
+                  {certData.timestamp ? new Date(certData.timestamp).toLocaleString() : 'N/A'}
+                </p>
+              </article>
+            </div>
+
+            <article className="panel mt-4 p-4">
+              <p className="text-xs text-[#8b949e]">SHA-256 Hash</p>
+              <p className="mt-1 break-all font-mono text-sm text-[#c9d1d9]">{fileHash}</p>
+            </article>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a
+                href={explorerHref || '#'}
+                target="_blank"
+                rel="noreferrer"
+                className={cn('btn-primary', !explorerHref && 'pointer-events-none opacity-50')}
+              >
+                Open Explorer
+              </a>
+              <button onClick={reset} className="btn-primary">Verify Another PDF</button>
+            </div>
+          </div>
         )}
 
         {verificationResult === 'failed' && (
-          <motion.div
-            key="failed"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-zinc-900 border border-rose-500/30 p-20 flex flex-col items-center text-center gap-10"
-          >
-            <div className="w-16 h-16 border-2 border-rose-500 flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.2)]">
-               <ShieldAlert className="w-8 h-8 text-rose-500" />
+          <div className="mt-6 rounded-xl border border-[#f85149]/50 bg-[#2d1117] p-5 text-[#f85149]">
+            <div className="flex items-start gap-2">
+              <ShieldAlert className="mt-0.5 h-5 w-5" />
+              <div>
+                <h3 className="text-base font-semibold">Verification failed</h3>
+                <p className="mt-1 text-sm">The uploaded file hash does not match any valid on-chain record.</p>
+                <p className="mt-2 break-all font-mono text-xs">Hash: {fileHash}</p>
+              </div>
             </div>
-            <div className="space-y-4">
-               <h2 className="text-3xl font-bold text-rose-500 uppercase tracking-[0.2em]">STATUS: HASH_MISMATCH_DETECTED</h2>
-               <p className="text-zinc-500 text-[10px] font-mono leading-relaxed max-w-sm mx-auto uppercase tracking-widest">
-                 NODE_REJECTION: THE SHA-256 FINGERPRINT OF THIS ASSET DOES NOT MATCH ANY RECORD IN THE BROADCAST CONSENSUS LAYER.
-               </p>
-               <div className="font-mono text-[10px] p-4 bg-rose-500/5 border border-rose-500/10 text-rose-400 break-all">
-                 QUERY_HASH: {fileHash}
-               </div>
-            </div>
-            <button onClick={reset} className="bg-white text-zinc-950 px-12 py-4 font-bold text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all">
-              RETRY_AUTHENTICATION
-            </button>
-          </motion.div>
+            <button onClick={reset} className="btn-primary mt-4">Try Again</button>
+          </div>
         )}
-      </AnimatePresence>
-
-      <footer className="pt-20 border-t border-zinc-900 flex justify-between items-center text-zinc-700 text-[8px] font-mono tracking-[0.4em] uppercase">
-         <div className="flex items-center gap-10">
-            <span className="flex items-center gap-2 font-bold"><div className="w-1 h-1 bg-emerald-500" /> ENV: SECURE</span>
-            <span className="flex items-center gap-2 font-bold"><div className="w-1 h-1 bg-emerald-500" /> ENGINE_SHA: 2.0.4</span>
-         </div>
-         <div className="font-bold">EVM_COMPATIBLE_LEDGER: SYNCED</div>
-      </footer>
+      </section>
     </div>
   );
 }

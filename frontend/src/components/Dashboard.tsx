@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { IssueCertificate } from './IssueCertificate';
-import { VerifyCertificate } from './VerifyCertificate';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ShieldCheck, SearchCheck, ShieldX, Fingerprint } from 'lucide-react';
 
 export function Dashboard() {
   const [stats, setStats] = useState({
     totalVerified: '---',
     blockHeight: '---',
-    network: 'FETCHING...'
+    network: 'FETCHING...',
   });
 
   useEffect(() => {
@@ -21,131 +20,97 @@ export function Dashboard() {
         setStats({
           totalVerified: data.totalVerified || '---',
           blockHeight: data.blockHeight || '---',
-          network: data.network || 'OFFLINE'
+          network: data.network || 'OFFLINE',
         });
       } catch (error: any) {
-        // Log to console but provide a safe state for the UI
-        console.warn("Dashboard stats fetch background issue:", error.message || error);
-        setStats(prev => ({ 
-          ...prev, 
-          network: prev.network === 'FETCHING...' ? 'OFFLINE' : prev.network 
+        console.warn('Dashboard stats issue:', error.message || error);
+        setStats((prev) => ({
+          ...prev,
+          network: prev.network === 'FETCHING...' ? 'OFFLINE' : prev.network,
         }));
       }
     };
+
     fetchStats();
-    const interval = setInterval(fetchStats, 10000); // Refresh every 10s
+    const interval = setInterval(fetchStats, 10000);
     return () => clearInterval(interval);
   }, []);
 
+  const actions = [
+    {
+      label: 'Issue Certificate',
+      description: 'Mint a new credential NFT to a recipient wallet.',
+      to: '/issue',
+      icon: ShieldCheck,
+    },
+    {
+      label: 'Verify Token',
+      description: 'Resolve and validate metadata using token ID.',
+      to: '/verify',
+      icon: SearchCheck,
+    },
+    {
+      label: 'Public Verify',
+      description: 'Upload a PDF and validate its SHA-256 fingerprint.',
+      to: '/public-verify',
+      icon: Fingerprint,
+    },
+    {
+      label: 'Revoke Token',
+      description: 'Invalidate an existing certificate token permanently.',
+      to: '/revoke',
+      icon: ShieldX,
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-zinc-950 p-8 cyber-grid">
-      <div className="max-w-[1400px] mx-auto space-y-12">
-        <motion.header 
-          initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false }}
-          transition={{ duration: 0.6 }}
-          className="space-y-1"
-        >
-          <h1 className="text-3xl font-semibold text-white tracking-tight">System Overview</h1>
-          <div className="flex items-center gap-4">
-            <p className="text-zinc-500 text-xs font-medium">{stats.network === 'OFFLINE' ? 'Status: Idle' : 'Network Synchronized'} • Verification Alpha</p>
-            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+    <div className="space-y-8">
+      <section className="panel p-6 md:p-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="section-title">Certificate Operations</h2>
+            <p className="section-subtitle mt-2 max-w-2xl">
+              Use this workspace to issue, verify, and revoke certificate tokens using your current blockchain setup.
+            </p>
           </div>
-        </motion.header>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { label: 'Total Verified', value: stats.totalVerified, trend: 'Stable', color: 'text-emerald-500' },
-            { label: 'Current Block', value: stats.blockHeight, trend: 'Live', color: 'text-white' },
-            { label: 'Node Status', value: stats.network, trend: 'Active', color: 'text-emerald-500' },
-          ].map((stat, i) => (
-            <motion.div 
-              key={i}
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
-              viewport={{ once: false, margin: "-50px" }}
-              transition={{ type: "spring", damping: 15, stiffness: 100, delay: i * 0.1 }}
-              className="p-8 rounded-3xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm group hover:bg-zinc-800/80 transition-all duration-300"
-            >
-              <p className="text-xs font-medium text-zinc-500 mb-4">{stat.label}</p>
-              <div className="flex items-end justify-between">
-                <span className="text-2xl font-mono text-white tracking-tighter">{stat.value}</span>
-                <span className={stat.color + " text-[10px] font-mono font-bold"}>[{stat.trend}]</span>
-              </div>
-            </motion.div>
-          ))}
+          <span className="pill">
+            Network: {stats.network}
+          </span>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 30 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: false, margin: "-50px" }}
-            transition={{ type: "spring", damping: 12, stiffness: 100, delay: 0.1 }}
-          >
-            <IssueCertificate />
-          </motion.div>
+      <section className="grid gap-4 md:grid-cols-3">
+        <article className="panel p-5">
+          <p className="text-sm text-[#8b949e]">Total Verified</p>
+          <p className="mt-2 font-mono text-2xl font-semibold text-[#c9d1d9]">{stats.totalVerified}</p>
+        </article>
+        <article className="panel p-5">
+          <p className="text-sm text-[#8b949e]">Current Block</p>
+          <p className="mt-2 font-mono text-2xl font-semibold text-[#c9d1d9]">{stats.blockHeight}</p>
+        </article>
+        <article className="panel p-5">
+          <p className="text-sm text-[#8b949e]">Node Status</p>
+          <p className="mt-2 text-2xl font-semibold text-[#c9d1d9]">{stats.network}</p>
+        </article>
+      </section>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 30 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: false, margin: "-50px" }}
-            transition={{ type: "spring", damping: 12, stiffness: 100, delay: 0.2 }}
+      <section className="grid gap-4 md:grid-cols-2">
+        {actions.map((action) => (
+          <Link
+            key={action.to}
+            to={action.to}
+            className="panel flex items-start gap-4 p-5 hover:border-[#8b949e]"
           >
-            <VerifyCertificate />
-          </motion.div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 40 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: false, margin: "-50px" }}
-            transition={{ type: "spring", damping: 15, stiffness: 100 }}
-            className="border border-zinc-800 bg-zinc-900/30 p-12 flex flex-col items-center justify-center text-center gap-8 relative overflow-hidden group min-h-[400px] rounded-3xl"
-          >
-            <div className="absolute inset-0 bg-emerald-500 opacity-[0.01] group-hover:opacity-[0.03] transition-opacity duration-700" />
-            
-            <div className="relative">
-              <div className="w-24 h-24 border border-zinc-800 rounded-3xl flex items-center justify-center group-hover:border-white transition-colors duration-500">
-                 <div className="w-12 h-12 border border-zinc-800 rounded-xl animate-spin group-hover:border-emerald-500" />
-              </div>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#21262d] text-[#c9d1d9]">
+              <action.icon className="h-5 w-5" />
             </div>
-            
-            <div className="space-y-2 relative z-10">
-              <h2 className="text-xl font-semibold text-white tracking-tight">Relay Bridge Active</h2>
-              <p className="text-xs text-zinc-500 max-w-xs mx-auto">Encryption protocols established. The local node is successfully bridged to the L1 credential relay.</p>
+            <div>
+              <h3 className="text-base font-semibold text-[#c9d1d9]">{action.label}</h3>
+              <p className="mt-1 text-sm text-[#8b949e]">{action.description}</p>
             </div>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 40 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: false, margin: "-50px" }}
-            transition={{ type: "spring", damping: 15, stiffness: 100, delay: 0.1 }}
-            className="border border-zinc-800 bg-zinc-900/30 p-12 flex flex-col items-start gap-8 min-h-[400px] rounded-3xl overflow-hidden"
-          >
-            <h2 className="text-xs font-semibold text-white">Node Manifest</h2>
-            <div className="w-full space-y-4">
-              {[
-                { label: 'Latency', value: '14ms' },
-                { label: 'Active Peers', value: '8 Nodes' },
-                { label: 'Memory Usage', value: '1.2GB / 4.0GB' },
-                { label: 'System Uptime', value: '12:04:42' },
-              ].map((item, i) => (
-                <div key={i} className="flex justify-between items-center border-b border-zinc-800/50 pb-4 last:border-0 text-xs">
-                  <span className="text-zinc-500">{item.label}</span>
-                  <span className="text-white font-mono">{item.value}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-auto w-full bg-zinc-950/50 p-4 border border-zinc-800 rounded-xl">
-               <p className="text-[10px] font-mono text-emerald-500 animate-pulse">Syncing relay buffer...</p>
-            </div>
-          </motion.div>
-        </div>
-      </div>
+          </Link>
+        ))}
+      </section>
     </div>
   );
 }

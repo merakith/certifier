@@ -18,11 +18,12 @@ export function Layout({ children }: LayoutProps) {
     }
   };
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
   return (
-    <div className="flex h-screen w-full bg-zinc-950 overflow-hidden font-sans">
-      <aside className="hidden lg:block w-72 border-r border-zinc-800/80">
+    <div className="relative flex h-screen w-full overflow-hidden bg-[#0d1117]">
+
+      <aside className="relative z-20 hidden w-72 shrink-0 p-4 lg:block">
         <Sidebar />
       </aside>
 
@@ -34,14 +35,14 @@ export function Layout({ children }: LayoutProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-md z-40 lg:hidden"
+              className="fixed inset-0 z-40 bg-black/35 lg:hidden"
             />
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-72 z-50 shadow-2xl shadow-black/50 lg:hidden"
+              transition={{ type: 'spring', damping: 24, stiffness: 240 }}
+              className="fixed inset-y-0 left-0 z-50 w-[86%] max-w-80 p-4 lg:hidden"
             >
               <Sidebar onClose={() => setIsSidebarOpen(false)} />
             </motion.div>
@@ -49,18 +50,14 @@ export function Layout({ children }: LayoutProps) {
         )}
       </AnimatePresence>
 
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        <div className="absolute inset-0 cyber-grid pointer-events-none" />
-        
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col px-3 pb-3 pt-3 md:px-4 md:pb-4">
         <TopNav isScrolled={isScrolled} onToggleSidebar={toggleSidebar} />
-        <main 
+        <main
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto p-4 md:p-8 relative z-10 scroll-smooth"
+          className="relative mt-3 flex-1 overflow-y-auto rounded-2xl border border-[#30363d] bg-[#0d1117] p-4 shadow-sm md:mt-4 md:p-8"
         >
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+          <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
     </div>

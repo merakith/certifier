@@ -1,6 +1,7 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Menu, Bell, Hexagon } from 'lucide-react';
+import { Menu, Dot, Compass } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useLocation } from 'react-router-dom';
 
 interface TopNavProps {
   isScrolled?: boolean;
@@ -8,36 +9,51 @@ interface TopNavProps {
 }
 
 export function TopNav({ isScrolled, onToggleSidebar }: TopNavProps) {
+  const location = useLocation();
+
+  const routeMeta: Record<string, { title: string; subtitle: string }> = {
+    '/': { title: 'Dashboard', subtitle: 'Overview of certificate operations' },
+    '/issue': { title: 'Issue Certificate', subtitle: 'Mint a new credential token' },
+    '/verify': { title: 'Verify Token', subtitle: 'Resolve metadata for a token ID' },
+    '/public-verify': { title: 'Public Verify', subtitle: 'Upload PDF and validate its hash' },
+    '/revoke': { title: 'Revoke Token', subtitle: 'Permanently invalidate an issued token' },
+  };
+
+  const page = routeMeta[location.pathname] ?? {
+    title: 'Certifier',
+    subtitle: 'Credential operations workspace',
+  };
+
   return (
     <header className={cn(
-      "h-20 flex items-center justify-between px-4 md:px-8 z-20 sticky top-0 transition-all duration-500",
+      'panel sticky top-0 z-30 flex h-20 items-center justify-between px-4 md:px-6',
       isScrolled 
-        ? "bg-zinc-950/90 backdrop-blur-xl border-b border-emerald-500/30 shadow-[0_4px_20px_-12px_rgba(16,185,129,0.3)]" 
-        : "bg-transparent border-b border-zinc-800/20"
+        ? 'border-[#30363d] bg-[#161b22] shadow-sm' 
+        : 'bg-[#161b22]'
     )}>
-      <div className="flex items-center gap-6 flex-1">
-        <button 
+      <div className="flex min-w-0 items-center gap-3 md:gap-4">
+        <button
           onClick={onToggleSidebar}
-          className="p-2 hover:bg-zinc-800/50 rounded-lg transition-colors text-zinc-400 hover:text-white lg:hidden"
+          className="rounded-xl border border-[#30363d] bg-[#21262d] p-2 text-[#8b949e] hover:bg-[#30363d] lg:hidden"
           aria-label="Open sidebar"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="h-5 w-5" />
         </button>
+
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-semibold text-[#c9d1d9] md:text-xl">{page.title}</h1>
+          <p className="truncate text-xs text-[#8b949e] md:text-sm">{page.subtitle}</p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3 md:gap-6">
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-900/30 border border-zinc-800/50 rounded-full">
-          <Hexagon className="w-3 h-3 text-emerald-500" />
-          <span className="text-[10px] font-mono text-zinc-400 tracking-wider">EVM: READY</span>
+      <div className="flex items-center gap-2 md:gap-4">
+        <div className="hidden items-center gap-2 rounded-full border border-[#30363d] bg-[#21262d] px-3 py-1.5 text-[11px] font-medium text-[#8b949e] md:inline-flex">
+          <Compass className="h-3.5 w-3.5" />
+          Local Network
+          <Dot className="h-4 w-4 text-[#1f6feb]" />
+          Ready
         </div>
-        
-        <button className="p-2 text-zinc-500 hover:text-white transition-colors relative">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-        </button>
 
-        <div className="h-4 w-[1px] bg-zinc-800" />
-        
         <ConnectButton.Custom>
           {({
             account,
@@ -70,10 +86,10 @@ export function TopNav({ isScrolled, onToggleSidebar }: TopNavProps) {
                 {(() => {
                   if (!connected) {
                     return (
-                      <button 
-                        onClick={openConnectModal} 
+                      <button
+                        onClick={openConnectModal}
                         type="button"
-                        className="bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold py-2 px-6 rounded-xl text-[10px] uppercase tracking-widest transition-all"
+                        className="btn-accent px-4 py-2 text-xs"
                       >
                         Connect Wallet
                       </button>
@@ -82,10 +98,10 @@ export function TopNav({ isScrolled, onToggleSidebar }: TopNavProps) {
 
                   if (chain.unsupported) {
                     return (
-                      <button 
-                        onClick={openChainModal} 
+                      <button
+                        onClick={openChainModal}
                         type="button"
-                        className="bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-6 rounded-xl text-[10px] uppercase tracking-widest transition-all"
+                        className="btn-danger px-4 py-2 text-xs"
                       >
                         Wrong Network
                       </button>
@@ -96,10 +112,10 @@ export function TopNav({ isScrolled, onToggleSidebar }: TopNavProps) {
                     <button
                       onClick={openAccountModal}
                       type="button"
-                      className="bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 text-white font-bold py-2 px-6 rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center gap-2"
+                      className="btn-primary gap-2 px-4 py-2 text-xs"
                     >
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                      Wallet Connected
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#1f6feb]" />
+                      {account.displayName}
                     </button>
                   );
                 })()}
